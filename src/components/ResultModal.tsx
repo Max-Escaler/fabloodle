@@ -3,6 +3,7 @@ import type { GuessResult } from "../utils/gameLogic";
 import { buildShareText } from "../utils/shareUtils";
 import type { FabCard } from "../data/cards";
 import { CardAvatar } from "./CardAvatar";
+import type { GameStats } from "../utils/statsUtils";
 
 const PITCH_COLORS: Record<number, string> = { 1: "#e74c3c", 2: "#f1c40f", 3: "#3498db" };
 const PITCH_NAMES: Record<number, string> = { 1: "Red", 2: "Yellow", 3: "Blue" };
@@ -11,10 +12,11 @@ interface ResultModalProps {
   won: boolean;
   answer: FabCard;
   guesses: GuessResult[];
+  stats: GameStats;
   onClose: () => void;
 }
 
-export function ResultModal({ won, answer, guesses, onClose }: ResultModalProps) {
+export function ResultModal({ won, answer, guesses, stats, onClose }: ResultModalProps) {
   const [copied, setCopied] = useState(false);
 
   function handleShare() {
@@ -30,7 +32,7 @@ export function ResultModal({ won, answer, guesses, onClose }: ResultModalProps)
       ? "Colorless"
       : answer.pitchValues.map((v) => PITCH_NAMES[v] ?? v).join(", ");
 
-  const stats = [
+  const cardDetails = [
     { label: "Type",    value: answer.type },
     { label: "Attack",  value: answer.attack ?? "—" },
     { label: "Defense", value: answer.defense ?? "—" },
@@ -75,9 +77,31 @@ export function ResultModal({ won, answer, guesses, onClose }: ResultModalProps)
           </div>
         </div>
 
-        {/* Stats grid */}
+        {/* Streak & wins */}
+        {won && (
+          <div className="flex justify-center gap-6 mb-5">
+            <div className="flex flex-col items-center bg-[#121213] rounded-xl px-5 py-3 min-w-[90px]">
+              <span className="text-3xl font-bold text-[#d4a843] leading-none">
+                {stats.streak}
+              </span>
+              <span className="text-[#818384] text-xs uppercase tracking-wide mt-1">
+                🔥 Streak
+              </span>
+            </div>
+            <div className="flex flex-col items-center bg-[#121213] rounded-xl px-5 py-3 min-w-[90px]">
+              <span className="text-3xl font-bold text-[#538d4e] leading-none">
+                {stats.totalWins}
+              </span>
+              <span className="text-[#818384] text-xs uppercase tracking-wide mt-1">
+                ★ Total Wins
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Card stats grid */}
         <div className="grid grid-cols-4 gap-2 mb-5">
-          {stats.map((s) => (
+          {cardDetails.map((s) => (
             <div key={s.label} className="bg-[#121213] rounded-lg p-2 text-center">
               <div className="text-[#818384] text-[10px] uppercase tracking-wide mb-0.5">
                 {s.label}

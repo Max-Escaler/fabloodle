@@ -8,6 +8,8 @@ import { CardSearch } from "./components/CardSearch";
 import { GuessGrid } from "./components/GuessGrid";
 import { ResultModal } from "./components/ResultModal";
 import type { FabCard } from "./data/cards";
+import { recordWin, loadStats } from "./utils/statsUtils";
+import type { GameStats } from "./utils/statsUtils";
 
 const DAILY_CARD = getDailyCard(CARDS);
 
@@ -18,6 +20,7 @@ export default function App() {
   const [gameState, setGameState] = useState<GameState>("playing");
   const [showModal, setShowModal] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [stats, setStats] = useState<GameStats>(() => loadStats());
 
   const guessedIds = new Set(guesses.map((g) => g.card.id));
 
@@ -40,6 +43,8 @@ export default function App() {
 
       if (isCorrectGuess(result)) {
         setGameState("won");
+        const updated = recordWin();
+        setStats(updated);
         setTimeout(
           () => setShowModal(true),
           newGuesses.length * 50 + 8 * 120 + 500
@@ -117,6 +122,7 @@ export default function App() {
           won={gameState === "won"}
           answer={DAILY_CARD}
           guesses={guesses}
+          stats={stats}
           onClose={() => setShowModal(false)}
         />
       )}
