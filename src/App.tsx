@@ -10,14 +10,15 @@ import { ResultModal } from "./components/ResultModal";
 import type { FabCard } from "./data/cards";
 import { recordWin, loadStats } from "./utils/statsUtils";
 import type { GameStats } from "./utils/statsUtils";
+import { loadProgress, saveProgress } from "./utils/progressUtils";
 
 const DAILY_CARD = getDailyCard(CARDS);
 
 type GameState = "playing" | "won";
 
 export default function App() {
-  const [guesses, setGuesses] = useState<GuessResult[]>([]);
-  const [gameState, setGameState] = useState<GameState>("playing");
+  const [guesses, setGuesses] = useState<GuessResult[]>(() => loadProgress().guesses);
+  const [gameState, setGameState] = useState<GameState>(() => loadProgress().gameState);
   const [showModal, setShowModal] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [stats, setStats] = useState<GameStats>(() => loadStats());
@@ -39,16 +40,21 @@ export default function App() {
 
       const result = evaluateGuess(card, DAILY_CARD);
       const newGuesses = [...guesses, result];
-      setGuesses(newGuesses);
 
       if (isCorrectGuess(result)) {
-        setGameState("won");
+        const newState: GameState = "won";
+        setGuesses(newGuesses);
+        setGameState(newState);
+        saveProgress(newGuesses, newState);
         const updated = recordWin();
         setStats(updated);
         setTimeout(
           () => setShowModal(true),
           newGuesses.length * 50 + 8 * 120 + 500
         );
+      } else {
+        setGuesses(newGuesses);
+        saveProgress(newGuesses, "playing");
       }
     },
     [gameState, guesses, guessedIds]
