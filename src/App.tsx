@@ -70,7 +70,7 @@ export default function App() {
         </div>
       )}
 
-      <main className="flex-1 flex flex-col items-center gap-6 pt-6 pb-10 px-4 w-full">
+      <main className="flex-1 flex flex-col items-center gap-4 sm:gap-6 pt-4 sm:pt-6 pb-10 px-3 sm:px-4 w-full">
         {/* Legend */}
         <div className="flex flex-wrap justify-center gap-5 text-sm text-[#818384]">
           <span className="flex items-center gap-2">
@@ -105,9 +105,9 @@ export default function App() {
           {guesses.length} {guesses.length === 1 ? "guess" : "guesses"}
         </div>
 
-        {/* Guess grid — centered, scrolls horizontally on small screens */}
+        {/* Guess grid — stacked on mobile, horizontal on desktop */}
         {guesses.length > 0 && (
-          <div className="w-full max-w-[1280px] overflow-x-auto">
+          <div className="w-full max-w-[1280px] sm:overflow-x-auto">
             <GuessGrid guesses={guesses} />
           </div>
         )}

@@ -6,10 +6,21 @@ const NUMERIC_KEYS = new Set(["attack", "defense", "cost"]);
 
 const DISPLAY_SHORT: Record<string, string> = {
   "Attack Action":     "Attack",
-  "Non-Attack Action": "Non-Attack",
+  "Non-Attack Action": "Non-Atk",
   "Defense Reaction":  "Def React",
   "Attack Reaction":   "Atk React",
   "Super Rare":        "S. Rare",
+};
+
+const CELL_LABELS: Record<string, string> = {
+  type:        "Type",
+  attack:      "Attack",
+  defense:     "Defense",
+  cost:        "Cost",
+  pitchValues: "Colors",
+  talent:      "Talent",
+  heroClass:   "Class",
+  rarity:      "Rarity",
 };
 
 const PITCH_COLORS: Record<number, string> = {
@@ -22,6 +33,8 @@ interface CellProps {
   cellKey: string;
   result: CellResult;
   delay: number;
+  /** Show category label inside the cell (mobile) */
+  showLabel?: boolean;
 }
 
 function Arrow({ direction }: { direction: "higher" | "lower" | null }) {
@@ -33,16 +46,16 @@ function Arrow({ direction }: { direction: "higher" | "lower" | null }) {
   );
 }
 
-function PitchDots({ values }: { values: number[] }) {
+function PitchDots({ values, small }: { values: number[]; small?: boolean }) {
   if (values.length === 0) {
     return <span className="text-white/50 text-sm">—</span>;
   }
   return (
-    <div className="flex gap-1.5 justify-center flex-wrap">
+    <div className="flex gap-1 justify-center flex-wrap">
       {values.map((v) => (
         <span
           key={v}
-          className="w-4 h-4 rounded-full inline-block shrink-0"
+          className={`rounded-full inline-block shrink-0 ${small ? "w-3 h-3" : "w-4 h-4"}`}
           style={{ backgroundColor: PITCH_COLORS[v] ?? "#818384" }}
           title={v === 1 ? "Red" : v === 2 ? "Yellow" : "Blue"}
         />
@@ -51,7 +64,7 @@ function PitchDots({ values }: { values: number[] }) {
   );
 }
 
-function Cell({ cellKey, result, delay }: CellProps) {
+function Cell({ cellKey, result, delay, showLabel = false }: CellProps) {
   const [revealed, setRevealed] = useState(false);
   const showArrow = NUMERIC_KEYS.has(cellKey) && result.status !== "correct";
   const isPitch = cellKey === "pitchValues";
@@ -71,17 +84,26 @@ function Cell({ cellKey, result, delay }: CellProps) {
 
   return (
     <div
-      className={`w-full h-[104px] flex flex-col items-center justify-center gap-1 rounded-lg transition-all duration-300 ${bgColor} ${
+      className={`w-full flex flex-col items-center justify-center gap-0.5 rounded-lg transition-all duration-300 ${bgColor} ${
         revealed ? "cell-flip" : ""
-      }`}
+      } ${showLabel ? "h-[72px]" : "h-[104px]"}`}
       style={{ animationDelay: `${delay}ms` }}
     >
+      {showLabel && (
+        <span className="text-white/50 text-[9px] font-semibold uppercase tracking-wide leading-none">
+          {CELL_LABELS[cellKey]}
+        </span>
+      )}
       {revealed && (
         <>
           {isPitch ? (
-            <PitchDots values={result.value as number[]} />
+            <PitchDots values={result.value as number[]} small={showLabel} />
           ) : (
-            <span className="text-white text-[13px] font-bold leading-tight text-center px-1 w-full break-words line-clamp-3">
+            <span
+              className={`text-white font-bold leading-tight text-center px-1 w-full break-words line-clamp-2 ${
+                showLabel ? "text-[11px]" : "text-[13px]"
+              }`}
+            >
               {DISPLAY_SHORT[String(result.value)] ?? String(result.value)}
             </span>
           )}
@@ -113,29 +135,58 @@ export function GuessRow({ result, rowIndex }: GuessRowProps) {
   const CELL_STAGGER = 120;
 
   return (
-    <div
-      className="grid items-center gap-2 w-full px-3 min-w-[880px]"
-      style={{ gridTemplateColumns: "minmax(200px, 260px) repeat(8, minmax(96px, 120px))" }}
-    >
-      <div className="flex items-center gap-3 min-w-0">
-        <CardAvatar card={result.card} size={72} className="shrink-0" />
-        <div className="min-w-0">
-          <span className="text-white text-sm font-semibold leading-snug line-clamp-2 block">
-            {result.card.name}
-          </span>
-          <span className="text-[#818384] text-xs truncate block mt-0.5">
-            {result.card.type}
-          </span>
+    <>
+      {/* ── Mobile layout: card info row + 4×2 grid ── */}
+      <div className="sm:hidden flex flex-col gap-2 p-2 rounded-xl bg-[#1a1a1b] border border-[#3a3a3c]">
+        <div className="flex items-center gap-2">
+          <CardAvatar card={result.card} size={48} className="shrink-0" />
+          <div className="min-w-0">
+            <span className="text-white text-sm font-semibold leading-snug line-clamp-2 block">
+              {result.card.name}
+            </span>
+            <span className="text-[#818384] text-xs truncate block mt-0.5">
+              {result.card.type}
+            </span>
+          </div>
+        </div>
+        <div className="grid grid-cols-4 gap-1.5">
+          {CELL_KEYS.map((key, i) => (
+            <Cell
+              key={key}
+              cellKey={key}
+              result={result.cells[key]}
+              delay={BASE_DELAY + i * CELL_STAGGER}
+              showLabel
+            />
+          ))}
         </div>
       </div>
-      {CELL_KEYS.map((key, i) => (
-        <Cell
-          key={key}
-          cellKey={key}
-          result={result.cells[key]}
-          delay={BASE_DELAY + i * CELL_STAGGER}
-        />
-      ))}
-    </div>
+
+      {/* ── Desktop layout: horizontal grid row ── */}
+      <div
+        className="hidden sm:grid items-center gap-2 w-full px-3 min-w-[880px]"
+        style={{ gridTemplateColumns: "minmax(200px, 260px) repeat(8, minmax(96px, 120px))" }}
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <CardAvatar card={result.card} size={72} className="shrink-0" />
+          <div className="min-w-0">
+            <span className="text-white text-sm font-semibold leading-snug line-clamp-2 block">
+              {result.card.name}
+            </span>
+            <span className="text-[#818384] text-xs truncate block mt-0.5">
+              {result.card.type}
+            </span>
+          </div>
+        </div>
+        {CELL_KEYS.map((key, i) => (
+          <Cell
+            key={key}
+            cellKey={key}
+            result={result.cells[key]}
+            delay={BASE_DELAY + i * CELL_STAGGER}
+          />
+        ))}
+      </div>
+    </>
   );
 }

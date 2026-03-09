@@ -61,12 +61,16 @@ export function CardSearch({ cards, guessedIds, onSelect, disabled }: CardSearch
   }, [highlighted, filtered.length]);
 
   return (
-    <div className="relative w-full max-w-xl mx-auto">
+    <div className="relative w-full">
       <div className="relative flex items-center">
         <span className="absolute left-4 text-[#818384] pointer-events-none text-lg">🔍</span>
         <input
           ref={inputRef}
           type="text"
+          inputMode="search"
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
           value={query}
           onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
           onFocus={() => setOpen(true)}
@@ -81,14 +85,15 @@ export function CardSearch({ cards, guessedIds, onSelect, disabled }: CardSearch
       {open && filtered.length > 0 && (
         <ul
           ref={listRef}
-          className="absolute z-50 mt-1 w-full bg-[#1a1a1b] border border-[#3a3a3c] rounded-xl overflow-y-auto max-h-80 shadow-2xl"
+          className="absolute z-50 mt-1 w-full bg-[#1a1a1b] border border-[#3a3a3c] rounded-xl overflow-y-auto max-h-72 shadow-2xl"
         >
           {filtered.map((card, i) => (
             <li
               key={card.id}
               onMouseDown={() => handleSelect(card)}
+              onTouchEnd={(e) => { e.preventDefault(); handleSelect(card); }}
               onMouseEnter={() => setHighlighted(i)}
-              className={`px-4 py-2.5 cursor-pointer flex items-center gap-3 transition-colors ${
+              className={`px-4 py-3 cursor-pointer flex items-center gap-3 transition-colors ${
                 i === highlighted ? "bg-[#3a3a3c] text-white" : "text-[#d7d7d7] hover:bg-[#2a2a2b]"
               }`}
             >

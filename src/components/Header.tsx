@@ -5,7 +5,7 @@ export function Header() {
     <header className="w-full border-b border-[#3a3a3c] py-4 px-6 flex items-center justify-between">
       <div className="w-12" />
       <div className="flex flex-col items-center">
-        <h1 className="text-4xl font-bold tracking-widest text-[#d4a843] uppercase">
+        <h1 className="text-3xl sm:text-4xl font-bold tracking-widest text-[#d4a843] uppercase">
           Fabloodle
         </h1>
         <span className="text-xs text-[#818384] mt-0.5 tracking-wide">
