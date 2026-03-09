@@ -1,0 +1,77 @@
+@import "tailwindcss";
+
+@theme {
+  --color-fab-green: #538d4e;
+  --color-fab-yellow: #b59f3b;
+  --color-fab-gray: #3a3a3c;
+  --color-fab-bg: #121213;
+  --color-fab-surface: #1a1a1b;
+  --color-fab-border: #3a3a3c;
+  --color-fab-text: #ffffff;
+  --color-fab-muted: #818384;
+  --color-fab-gold: #d4a843;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #121213;
+  color: #ffffff;
+  font-family: 'Clear Sans', 'Helvetica Neue', Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+@keyframes flip-in {
+  0% { transform: rotateX(0deg); }
+  50% { transform: rotateX(-90deg); }
+  100% { transform: rotateX(-90deg); }
+}
+
+@keyframes flip-out {
+  0% { transform: rotateX(-90deg); }
+  50% { transform: rotateX(-90deg); }
+  100% { transform: rotateX(0deg); }
+}
+
+@keyframes flip {
+  0% { transform: rotateX(0deg); }
+  50% { transform: rotateX(-90deg); opacity: 0.5; }
+  100% { transform: rotateX(0deg); }
+}
+
+@keyframes bounce-in {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.12); }
+  70% { transform: scale(0.96); }
+  100% { transform: scale(1); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+
+.cell-flip {
+  animation: flip 0.5s ease forwards;
+}
+
+.cell-bounce {
+  animation: bounce-in 0.4s ease forwards;
+}
+
+.row-shake {
+  animation: shake 0.4s ease forwards;
+}
+
+.scrollbar-hide {
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
