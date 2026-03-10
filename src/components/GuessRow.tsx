@@ -20,7 +20,6 @@ const CELL_LABELS: Record<string, string> = {
   pitchValues: "Colors",
   talent:      "Talent",
   heroClass:   "Class",
-  rarity:      "Rarity",
 };
 
 const PITCH_COLORS: Record<number, string> = {
@@ -127,7 +126,6 @@ const CELL_KEYS = [
   "pitchValues",
   "talent",
   "heroClass",
-  "rarity",
 ] as const;
 
 export function GuessRow({ result, rowIndex }: GuessRowProps) {
@@ -164,8 +162,8 @@ export function GuessRow({ result, rowIndex }: GuessRowProps) {
 
       {/* ── Desktop layout: horizontal grid row ── */}
       <div
-        className="hidden sm:grid items-center gap-2 w-full px-3 min-w-[880px]"
-        style={{ gridTemplateColumns: "minmax(200px, 260px) repeat(8, minmax(96px, 120px))" }}
+        className="hidden sm:grid items-center gap-2 w-full px-3 min-w-[780px]"
+        style={{ gridTemplateColumns: "minmax(200px, 260px) repeat(7, minmax(96px, 120px))" }}
       >
         <div className="flex items-center gap-3 min-w-0">
           <CardAvatar card={result.card} size={72} className="shrink-0" />

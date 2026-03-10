@@ -6,14 +6,13 @@ const CATEGORIES = [
   { key: "pitchValues", label: "Colors" },
   { key: "talent",      label: "Talent" },
   { key: "heroClass",   label: "Class" },
-  { key: "rarity",      label: "Rarity" },
 ];
 
 export function CategoryHeader() {
   return (
     <div
-      className="hidden sm:grid items-center gap-2 w-full px-3 min-w-[880px]"
-      style={{ gridTemplateColumns: "minmax(200px, 260px) repeat(8, minmax(96px, 120px))" }}
+      className="hidden sm:grid items-center gap-2 w-full px-3 min-w-[780px]"
+      style={{ gridTemplateColumns: "minmax(200px, 260px) repeat(7, minmax(96px, 120px))" }}
     >
       {/* Spacer for the card name/avatar column */}
       <div />

@@ -15,7 +15,6 @@ const CATEGORY_KEYS = [
   "pitchValues",
   "talent",
   "heroClass",
-  "rarity",
 ] as const;
 
 export function buildShareText(guesses: GuessResult[], won: boolean): string {

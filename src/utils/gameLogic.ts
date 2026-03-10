@@ -20,8 +20,17 @@ export interface GuessResult {
     pitchValues: CellResult;
     talent: CellResult;
     heroClass: CellResult;
-    rarity: CellResult;
   };
+}
+
+/**
+ * A card with a talent but no dedicated class shows "None" for class,
+ * because "Generic" would be misleading — it belongs to a talent not a class.
+ * Only truly classless + talentless cards say "Generic".
+ */
+export function effectiveClass(card: FabCard): string {
+  if (card.heroClass === "Generic" && card.talent !== "None") return "None";
+  return card.heroClass;
 }
 
 // Null / missing values compare as -1 (below zero), so arrows always appear
@@ -100,8 +109,7 @@ export function evaluateGuess(guess: FabCard, answer: FabCard): GuessResult {
       cost: costCell(guess.costDisplay, answer.costDisplay),
       pitchValues: pitchCell(guess.pitchValues, answer.pitchValues),
       talent: exactCell(guess.talent, answer.talent),
-      heroClass: exactCell(guess.heroClass, answer.heroClass),
-      rarity: exactCell(guess.rarity, answer.rarity),
+      heroClass: exactCell(effectiveClass(guess), effectiveClass(answer)),
     },
   };
 }

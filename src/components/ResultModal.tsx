@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { GuessResult } from "../utils/gameLogic";
+import { effectiveClass } from "../utils/gameLogic";
 import { buildShareText } from "../utils/shareUtils";
 import type { FabCard } from "../data/cards";
 import { CardAvatar } from "./CardAvatar";
@@ -39,8 +40,7 @@ export function ResultModal({ won, answer, guesses, stats, onClose }: ResultModa
     { label: "Cost",    value: answer.costDisplay },
     { label: "Colors",  value: pitchLabel },
     { label: "Talent",  value: answer.talent },
-    { label: "Class",   value: answer.heroClass },
-    { label: "Rarity",  value: answer.rarity },
+    { label: "Class",   value: effectiveClass(answer) },
   ];
 
   return (
