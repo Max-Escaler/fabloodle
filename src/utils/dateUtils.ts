@@ -1,21 +1,23 @@
 import type { FabCard } from "../data/cards";
 
-const EPOCH = new Date("2026-01-01T00:00:00Z");
-
-export function getDayIndex(): number {
-  const now = new Date();
-  const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
-  const epochDay = Date.UTC(
-    EPOCH.getUTCFullYear(),
-    EPOCH.getUTCMonth(),
-    EPOCH.getUTCDate()
-  );
-  return Math.floor((today - epochDay) / 86400000);
+/**
+ * Deterministic hash of a "YYYY-MM-DD" string.
+ * Produces a well-distributed unsigned 32-bit integer so consecutive
+ * days don't just walk the card list in order.
+ */
+function hashDateString(dateStr: string): number {
+  let h = 0x811c9dc5; // FNV-1a 32-bit offset basis
+  for (let i = 0; i < dateStr.length; i++) {
+    h ^= dateStr.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0; // FNV prime, keep unsigned 32-bit
+  }
+  return h;
 }
 
 export function getDailyCard(cards: FabCard[]): FabCard {
-  const idx = getDayIndex();
-  return cards[((idx % cards.length) + cards.length) % cards.length];
+  const today = getTodayString();
+  const idx = hashDateString(today) % cards.length;
+  return cards[idx];
 }
 
 export function getTodayString(): string {

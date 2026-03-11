@@ -11,8 +11,8 @@ export function GuessGrid({ guesses }: GuessGridProps) {
     <div className="flex flex-col gap-2 w-full pb-2">
       <CategoryHeader />
       <div className="flex flex-col gap-2 sm:gap-1.5 w-full">
-        {guesses.map((g, i) => (
-          <GuessRow key={g.card.id} result={g} rowIndex={i} />
+        {[...guesses].reverse().map((g, i) => (
+          <GuessRow key={g.card.id} result={g} rowIndex={guesses.length - 1 - i} />
         ))}
       </div>
     </div>
