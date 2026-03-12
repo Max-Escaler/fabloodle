@@ -91,7 +91,22 @@ export function CardSearch({ cards, guessedIds, onSelect, disabled }: CardSearch
             <li
               key={card.id}
               onMouseDown={() => handleSelect(card)}
-              onTouchEnd={(e) => { e.preventDefault(); handleSelect(card); }}
+              onTouchStart={(e) => {
+                // Record where the finger started so we can distinguish tap vs scroll
+                (e.currentTarget as HTMLElement).dataset.touchStartY =
+                  String(e.touches[0].clientY);
+              }}
+              onTouchEnd={(e) => {
+                const startY = parseFloat(
+                  (e.currentTarget as HTMLElement).dataset.touchStartY ?? "0"
+                );
+                const endY = e.changedTouches[0].clientY;
+                // Only treat as a tap if the finger moved less than 10px vertically
+                if (Math.abs(endY - startY) < 10) {
+                  e.preventDefault();
+                  handleSelect(card);
+                }
+              }}
               onMouseEnter={() => setHighlighted(i)}
               className={`px-4 py-3 cursor-pointer flex items-center gap-3 transition-colors ${
                 i === highlighted ? "bg-[#3a3a3c] text-white" : "text-[#d7d7d7] hover:bg-[#2a2a2b]"
