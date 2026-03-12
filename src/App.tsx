@@ -41,7 +41,7 @@ export default function App() {
       const result = evaluateGuess(card, DAILY_CARD);
       const newGuesses = [...guesses, result];
 
-      if (isCorrectGuess(result)) {
+      if (result.isExactMatch) {
         const newState: GameState = "won";
         setGuesses(newGuesses);
         setGameState(newState);
@@ -55,6 +55,9 @@ export default function App() {
       } else {
         setGuesses(newGuesses);
         saveProgress(newGuesses, "playing");
+        if (isCorrectGuess(result)) {
+          showToast("Same stats — but that's not the card!");
+        }
       }
     },
     [gameState, guesses, guessedIds]

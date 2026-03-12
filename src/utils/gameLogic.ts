@@ -12,6 +12,8 @@ export interface CellResult {
 
 export interface GuessResult {
   card: FabCard;
+  /** True only when the guessed card's id matches the daily answer exactly. */
+  isExactMatch: boolean;
   cells: {
     type: CellResult;
     attack: CellResult;
@@ -102,6 +104,7 @@ function exactCell(guessVal: string, answerVal: string): CellResult {
 export function evaluateGuess(guess: FabCard, answer: FabCard): GuessResult {
   return {
     card: guess,
+    isExactMatch: guess.id === answer.id,
     cells: {
       type: exactCell(guess.type, answer.type),
       attack: numericCell(guess.attack, answer.attack, 2),

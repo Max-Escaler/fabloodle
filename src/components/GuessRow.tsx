@@ -116,6 +116,8 @@ function Cell({ cellKey, result, delay, showLabel = false }: CellProps) {
 interface GuessRowProps {
   result: GuessResult;
   rowIndex: number;
+  /** All 7 categories matched the answer but the card itself is different */
+  isSameStats?: boolean;
 }
 
 const CELL_KEYS = [
@@ -128,17 +130,21 @@ const CELL_KEYS = [
   "heroClass",
 ] as const;
 
-export function GuessRow({ result, rowIndex }: GuessRowProps) {
+export function GuessRow({ result, rowIndex, isSameStats = false }: GuessRowProps) {
   const BASE_DELAY = rowIndex * 50;
   const CELL_STAGGER = 120;
 
   return (
     <>
       {/* ── Mobile layout: card info row + 4×2 grid ── */}
-      <div className="sm:hidden flex flex-col gap-2 p-2 rounded-xl bg-[#1a1a1b] border border-[#3a3a3c]">
+      <div
+        className={`sm:hidden flex flex-col gap-2 p-2 rounded-xl bg-[#1a1a1b] border ${
+          isSameStats ? "border-[#d4a843]" : "border-[#3a3a3c]"
+        }`}
+      >
         <div className="flex items-center gap-2">
           <CardAvatar card={result.card} size={48} className="shrink-0" />
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <span className="text-white text-sm font-semibold leading-snug line-clamp-2 block">
               {result.card.name}
             </span>
@@ -146,6 +152,11 @@ export function GuessRow({ result, rowIndex }: GuessRowProps) {
               {result.card.type}
             </span>
           </div>
+          {isSameStats && (
+            <span className="shrink-0 text-[#d4a843] text-[10px] font-bold uppercase tracking-wide border border-[#d4a843] rounded px-1.5 py-0.5">
+              Same stats!
+            </span>
+          )}
         </div>
         <div className="grid grid-cols-4 gap-1.5">
           {CELL_KEYS.map((key, i) => (
@@ -165,7 +176,11 @@ export function GuessRow({ result, rowIndex }: GuessRowProps) {
         className="hidden sm:grid items-center gap-2 w-full px-3 min-w-[780px]"
         style={{ gridTemplateColumns: "minmax(200px, 260px) repeat(7, minmax(96px, 120px))" }}
       >
-        <div className="flex items-center gap-3 min-w-0">
+        <div
+          className={`flex items-center gap-3 min-w-0 rounded-lg px-2 py-1 ${
+            isSameStats ? "border-l-4 border-[#d4a843]" : ""
+          }`}
+        >
           <CardAvatar card={result.card} size={72} className="shrink-0" />
           <div className="min-w-0">
             <span className="text-white text-sm font-semibold leading-snug line-clamp-2 block">
@@ -174,6 +189,11 @@ export function GuessRow({ result, rowIndex }: GuessRowProps) {
             <span className="text-[#818384] text-xs truncate block mt-0.5">
               {result.card.type}
             </span>
+            {isSameStats && (
+              <span className="inline-block mt-1 text-[#d4a843] text-[10px] font-bold uppercase tracking-wide border border-[#d4a843] rounded px-1.5 py-0.5 leading-none">
+                Same stats!
+              </span>
+            )}
           </div>
         </div>
         {CELL_KEYS.map((key, i) => (
