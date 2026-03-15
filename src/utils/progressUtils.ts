@@ -2,7 +2,12 @@ import type { GuessResult } from "./gameLogic";
 
 type GameState = "playing" | "won";
 
+// Bump this whenever the GuessResult shape changes (new/removed cell keys).
+// Any saved data with a different version is silently discarded.
+const SCHEMA_VERSION = 3;
+
 interface SavedProgress {
+  schemaVersion: number;
   date: string;         // "YYYY-MM-DD" — must match today or is discarded
   guesses: GuessResult[];
   gameState: GameState;
@@ -21,8 +26,8 @@ export function loadProgress(): { guesses: GuessResult[]; gameState: GameState }
 
     const saved: SavedProgress = JSON.parse(raw);
 
-    // Discard progress from a previous day
-    if (saved.date !== todayStr()) {
+    // Discard progress from a previous day or an incompatible schema
+    if (saved.date !== todayStr() || saved.schemaVersion !== SCHEMA_VERSION) {
       localStorage.removeItem(STORAGE_KEY);
       return { guesses: [], gameState: "playing" };
     }
@@ -35,7 +40,7 @@ export function loadProgress(): { guesses: GuessResult[]; gameState: GameState }
 
 export function saveProgress(guesses: GuessResult[], gameState: GameState): void {
   try {
-    const data: SavedProgress = { date: todayStr(), guesses, gameState };
+    const data: SavedProgress = { schemaVersion: SCHEMA_VERSION, date: todayStr(), guesses, gameState };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch {
     // localStorage unavailable
