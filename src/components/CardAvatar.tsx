@@ -2,9 +2,7 @@ import { useState } from "react";
 import type { FabCard } from "../data/cards";
 
 const TYPE_COLORS: Record<string, string> = {
-  "Attack Action":    "#7a1a1a",
-  "Non-Attack Action":"#1a4a6b",
-  Aura:               "#4a1a6b",
+  Action:             "#1a4a6b",
   Instant:            "#1a6b5a",
   "Defense Reaction": "#2d5a27",
   "Attack Reaction":  "#6b4a1a",
@@ -12,6 +10,9 @@ const TYPE_COLORS: Record<string, string> = {
   Weapon:             "#6b1a1a",
   Mentor:             "#1a3a6b",
   Block:              "#3a1a6b",
+  Resource:           "#4a3a1a",
+  "Demi-Hero":        "#6b1a6b",
+  Companion:          "#1a6b6b",
 };
 
 interface CardAvatarProps {

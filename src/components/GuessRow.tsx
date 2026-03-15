@@ -3,23 +3,25 @@ import type { GuessResult, CellResult } from "../utils/gameLogic";
 import { CardAvatar } from "./CardAvatar";
 
 const NUMERIC_KEYS = new Set(["attack", "defense", "cost"]);
+const TAG_KEYS = new Set(["keywords", "subtypes"]);
 
 const DISPLAY_SHORT: Record<string, string> = {
-  "Attack Action":     "Attack",
-  "Non-Attack Action": "Non-Atk",
-  "Defense Reaction":  "Def React",
-  "Attack Reaction":   "Atk React",
-  "Super Rare":        "S. Rare",
+  "Defense Reaction": "Def React",
+  "Attack Reaction":  "Atk React",
+  "Super Rare":       "S. Rare",
+  "Demi-Hero":        "Demi-Hero",
 };
 
 const CELL_LABELS: Record<string, string> = {
   type:        "Type",
+  subtypes:    "Subtype",
   attack:      "Attack",
   defense:     "Defense",
   cost:        "Cost",
   pitchValues: "Colors",
   talent:      "Talent",
   heroClass:   "Class",
+  keywords:    "Keywords",
 };
 
 const PITCH_COLORS: Record<number, string> = {
@@ -63,10 +65,31 @@ function PitchDots({ values, small }: { values: number[]; small?: boolean }) {
   );
 }
 
+function KeywordTags({ values, small }: { values: string[]; small?: boolean }) {
+  if (values.length === 0) {
+    return <span className="text-white/50 text-sm">—</span>;
+  }
+  return (
+    <div className="flex flex-wrap gap-0.5 justify-center px-0.5">
+      {values.map((kw) => (
+        <span
+          key={kw}
+          className={`text-white font-semibold leading-tight bg-white/10 rounded px-0.5 ${
+            small ? "text-[8px]" : "text-[9px]"
+          }`}
+        >
+          {kw}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 function Cell({ cellKey, result, delay, showLabel = false }: CellProps) {
   const [revealed, setRevealed] = useState(false);
   const showArrow = NUMERIC_KEYS.has(cellKey) && result.status !== "correct";
   const isPitch = cellKey === "pitchValues";
+  const isTags = TAG_KEYS.has(cellKey);
 
   useEffect(() => {
     const timer = setTimeout(() => setRevealed(true), delay);
@@ -97,6 +120,8 @@ function Cell({ cellKey, result, delay, showLabel = false }: CellProps) {
         <>
           {isPitch ? (
             <PitchDots values={result.value as number[]} small={showLabel} />
+          ) : isTags ? (
+            <KeywordTags values={result.value as string[]} small={showLabel} />
           ) : (
             <span
               className={`text-white font-bold leading-tight text-center px-1 w-full break-words line-clamp-2 ${
@@ -122,12 +147,14 @@ interface GuessRowProps {
 
 const CELL_KEYS = [
   "type",
+  "subtypes",
   "attack",
   "defense",
   "cost",
   "pitchValues",
   "talent",
   "heroClass",
+  "keywords",
 ] as const;
 
 export function GuessRow({ result, rowIndex, isSameStats = false }: GuessRowProps) {
@@ -158,7 +185,7 @@ export function GuessRow({ result, rowIndex, isSameStats = false }: GuessRowProp
             </span>
           )}
         </div>
-        <div className="grid grid-cols-4 gap-1.5">
+        <div className="grid grid-cols-3 gap-1.5">
           {CELL_KEYS.map((key, i) => (
             <Cell
               key={key}
@@ -173,8 +200,8 @@ export function GuessRow({ result, rowIndex, isSameStats = false }: GuessRowProp
 
       {/* ── Desktop layout: horizontal grid row ── */}
       <div
-        className="hidden sm:grid items-center gap-2 w-full px-3 min-w-[780px]"
-        style={{ gridTemplateColumns: "minmax(200px, 260px) repeat(7, minmax(96px, 120px))" }}
+        className="hidden sm:grid items-center gap-2 w-full px-3 min-w-[1020px]"
+        style={{ gridTemplateColumns: "minmax(160px, 210px) repeat(9, minmax(84px, 106px))" }}
       >
         <div
           className={`flex items-center gap-3 min-w-0 rounded-lg px-2 py-1 ${

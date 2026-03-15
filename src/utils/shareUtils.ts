@@ -9,12 +9,14 @@ const EMOJI: Record<string, string> = {
 
 const CATEGORY_KEYS = [
   "type",
+  "subtypes",
   "attack",
   "defense",
   "cost",
   "pitchValues",
   "talent",
   "heroClass",
+  "keywords",
 ] as const;
 
 export function buildShareText(guesses: GuessResult[], won: boolean): string {

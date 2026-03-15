@@ -34,13 +34,15 @@ export function ResultModal({ won, answer, guesses, stats, onClose }: ResultModa
       : answer.pitchValues.map((v) => PITCH_NAMES[v] ?? v).join(", ");
 
   const cardDetails = [
-    { label: "Type",    value: answer.type },
-    { label: "Attack",  value: answer.attack ?? "—" },
-    { label: "Defense", value: answer.defense ?? "—" },
-    { label: "Cost",    value: answer.costDisplay },
-    { label: "Colors",  value: pitchLabel },
-    { label: "Talent",  value: answer.talent },
-    { label: "Class",   value: effectiveClass(answer) },
+    { label: "Type",     value: answer.type },
+    { label: "Subtype",  value: answer.subtypes.join(", ") || "—" },
+    { label: "Attack",   value: answer.attack ?? "—" },
+    { label: "Defense",  value: answer.defense ?? "—" },
+    { label: "Cost",     value: answer.costDisplay },
+    { label: "Colors",   value: pitchLabel },
+    { label: "Talent",   value: answer.talent },
+    { label: "Class",    value: effectiveClass(answer) },
+    { label: "Keywords", value: answer.keywords.join(", ") || "—" },
   ];
 
   return (
@@ -100,7 +102,7 @@ export function ResultModal({ won, answer, guesses, stats, onClose }: ResultModa
         )}
 
         {/* Card stats grid */}
-        <div className="grid grid-cols-4 gap-2 mb-5">
+        <div className="grid grid-cols-3 gap-2 mb-5">
           {cardDetails.map((s) => (
             <div key={s.label} className="bg-[#121213] rounded-lg p-2 text-center">
               <div className="text-[#818384] text-[10px] uppercase tracking-wide mb-0.5">

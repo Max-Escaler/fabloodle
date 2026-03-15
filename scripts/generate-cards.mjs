@@ -74,21 +74,8 @@ function getImageUrl(printings) {
   return `${IMG_BASE}${best.p.identifier}.webp`;
 }
 
-// Subtypes on Action cards that should be used as the card's type label directly.
-// Checked in priority order before falling back to Attack/Non-Attack.
-const NAMED_ACTION_SUBTYPES = [
-  "Aura", "Item", "Evo", "Invocation", "Construct", "Trap",
-  "Song", "Landmark", "Ally", "Affliction",
-];
-
-function getCardType(types, subtypes) {
-  if (types.includes("Action")) {
-    // Named subtypes take priority over generic attack/non-attack labels
-    for (const sub of NAMED_ACTION_SUBTYPES) {
-      if (subtypes.includes(sub)) return sub;
-    }
-    return subtypes.includes("Attack") ? "Attack Action" : "Non-Attack Action";
-  }
+function getCardType(types) {
+  if (types.includes("Action")) return "Action";
   if (types.includes("Defense Reaction")) return "Defense Reaction";
   if (types.includes("Attack Reaction")) return "Attack Reaction";
   if (types.includes("Instant")) return "Instant";
@@ -98,7 +85,17 @@ function getCardType(types, subtypes) {
   if (types.includes("Block")) return "Block";
   if (types.includes("Resource")) return "Resource";
   if (types.includes("Macro")) return "Macro";
+  if (types.includes("Demi-Hero")) return "Demi-Hero";
+  if (types.includes("Companion")) return "Companion";
   return types[0] ?? "Unknown";
+}
+
+// Subtypes to omit from the game hint (redundant or overly niche)
+const SKIP_SUBTYPES = new Set(["Young"]);
+
+function getSubtypes(versions) {
+  const all = versions.flatMap((v) => v.subtypes ?? []);
+  return [...new Set(all)].filter((s) => !SKIP_SUBTYPES.has(s)).sort();
 }
 
 const RARITY_RANK = {
@@ -124,6 +121,41 @@ function getHeroClass(classes) {
 function getTalent(talents) {
   if (!talents || talents.length === 0) return "None";
   return talents[0];
+}
+
+// Canonical display names for each main set
+const MAIN_SET_NAMES = {
+  WTR: "Welcome to Rathe",
+  ARC: "Arcane Rising",
+  CRU: "Crucible of War",
+  MON: "Monarch",
+  ELE: "Tales of Aria",
+  EVR: "Everfest",
+  UPR: "Uprising",
+  DYN: "Dynasty",
+  OUT: "Outsiders",
+  EVO: "Bright Lights",
+  DTD: "Dusk till Dawn",
+  MST: "Part the Mistveil",
+  ROS: "Rosetta",
+  HVY: "Heavy Hitters",
+  SEA: "High Seas",
+  HNT: "The Hunted",
+  GEM: "Gemstone",
+  OMN: "Omens of the Third Age",
+};
+
+function getFirstMainSet(setIdentifiers) {
+  if (!setIdentifiers || setIdentifiers.length === 0) return "Unknown";
+  for (const id of setIdentifiers) {
+    const code = setCodeFromId(id);
+    if (code && MAIN_SETS.has(code)) {
+      return MAIN_SET_NAMES[code] ?? code;
+    }
+  }
+  // Fallback: derive code from first identifier
+  const code = setCodeFromId(setIdentifiers[0]);
+  return MAIN_SET_NAMES[code] ?? code ?? "Unknown";
 }
 
 function toId(name) {
@@ -155,7 +187,8 @@ for (const [name, versions] of byName) {
 
   const pitchValues = [...new Set(versions.map((v) => v.pitch).filter((v) => v != null))].sort();
 
-  const type = getCardType(canonical.types ?? [], canonical.subtypes ?? []);
+  const type = getCardType(canonical.types ?? []);
+  const subtypes = getSubtypes(versions);
   const attack = canonical.power ?? null;
   const defense = canonical.defense ?? null;
 
@@ -172,13 +205,15 @@ for (const [name, versions] of byName) {
   const heroClass = getHeroClass(canonical.classes ?? []);
   const rarity = getMainRarity(canonical.rarities ?? []);
   const imageUrl = getImageUrl(canonical.printings ?? []);
+  const keywords = [...new Set(versions.flatMap((v) => v.keywords ?? []))].sort();
+  const set = getFirstMainSet(canonical.setIdentifiers ?? []);
 
   let id = toId(name);
   let counter = 1;
   while (idSet.has(id)) { id = `${toId(name)}-${++counter}`; }
   idSet.add(id);
 
-  cards.push({ id, name, imageUrl, type, attack, defense, costDisplay, pitchValues, talent, heroClass, rarity });
+  cards.push({ id, name, imageUrl, type, subtypes, attack, defense, costDisplay, pitchValues, talent, heroClass, rarity, keywords, set });
 }
 
 // Sort alphabetically
@@ -191,8 +226,10 @@ const lines = [
   `  id: string;`,
   `  name: string;`,
   `  imageUrl: string;`,
-  `  /** "Attack Action" | "Non-Attack Action" | "Aura" | "Instant" | "Defense Reaction" | "Attack Reaction" | "Equipment" | "Weapon" | "Mentor" | "Block" | "Resource" */`,
+  `  /** "Action" | "Defense Reaction" | "Attack Reaction" | "Instant" | "Equipment" | "Weapon" | "Mentor" | "Block" | "Resource" | "Macro" | "Demi-Hero" | "Companion" */`,
   `  type: string;`,
+  `  /** Subtypes, e.g. ["Attack","Arrow"] | ["1H","Sword"] | ["Head"] | ["Aura"] */`,
+  `  subtypes: string[];`,
   `  attack: number | null;`,
   `  defense: number | null;`,
   `  /** "0","1","2" etc. | "X","XX","2X" etc. | "—" (no cost) */`,
@@ -202,6 +239,10 @@ const lines = [
   `  talent: string;`,
   `  heroClass: string;`,
   `  rarity: string;`,
+  `  /** Keywords on this card, e.g. ["Go again", "Boost"] */`,
+  `  keywords: string[];`,
+  `  /** First main set the card debuted in, e.g. "Welcome to Rathe" */`,
+  `  set: string;`,
   `}`,
   ``,
   `export const CARDS: FabCard[] = [`,
@@ -209,7 +250,7 @@ const lines = [
 
 for (const c of cards) {
   lines.push(
-    `  {id:${JSON.stringify(c.id)},name:${JSON.stringify(c.name)},imageUrl:${JSON.stringify(c.imageUrl)},type:${JSON.stringify(c.type)},attack:${JSON.stringify(c.attack)},defense:${JSON.stringify(c.defense)},costDisplay:${JSON.stringify(c.costDisplay)},pitchValues:${JSON.stringify(c.pitchValues)},talent:${JSON.stringify(c.talent)},heroClass:${JSON.stringify(c.heroClass)},rarity:${JSON.stringify(c.rarity)}},`
+    `  {id:${JSON.stringify(c.id)},name:${JSON.stringify(c.name)},imageUrl:${JSON.stringify(c.imageUrl)},type:${JSON.stringify(c.type)},subtypes:${JSON.stringify(c.subtypes)},attack:${JSON.stringify(c.attack)},defense:${JSON.stringify(c.defense)},costDisplay:${JSON.stringify(c.costDisplay)},pitchValues:${JSON.stringify(c.pitchValues)},talent:${JSON.stringify(c.talent)},heroClass:${JSON.stringify(c.heroClass)},rarity:${JSON.stringify(c.rarity)},keywords:${JSON.stringify(c.keywords)},set:${JSON.stringify(c.set)}},`
   );
 }
 

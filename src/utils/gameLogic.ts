@@ -6,8 +6,8 @@ export type Direction = "higher" | "lower" | null;
 export interface CellResult {
   status: CellStatus;
   direction: Direction;
-  /** For pitch cells this is number[]; for all others it's string or number */
-  value: string | number | number[];
+  /** For pitch cells this is number[]; for keyword cells it's string[]; for all others it's string or number */
+  value: string | number | number[] | string[];
 }
 
 export interface GuessResult {
@@ -16,12 +16,15 @@ export interface GuessResult {
   isExactMatch: boolean;
   cells: {
     type: CellResult;
+    subtypes: CellResult;
     attack: CellResult;
     defense: CellResult;
     cost: CellResult;
     pitchValues: CellResult;
     talent: CellResult;
     heroClass: CellResult;
+    keywords: CellResult;
+    set: CellResult;
   };
 }
 
@@ -101,18 +104,33 @@ function exactCell(guessVal: string, answerVal: string): CellResult {
   };
 }
 
+function keywordsCell(guessVals: string[], answerVals: string[]): CellResult {
+  const aSet = new Set(answerVals);
+  const isExact =
+    guessVals.length === answerVals.length &&
+    guessVals.every((v) => aSet.has(v));
+  if (isExact) {
+    return { status: "correct", direction: null, value: guessVals };
+  }
+  const hasOverlap = guessVals.some((v) => aSet.has(v));
+  return { status: hasOverlap ? "close" : "wrong", direction: null, value: guessVals };
+}
+
 export function evaluateGuess(guess: FabCard, answer: FabCard): GuessResult {
   return {
     card: guess,
     isExactMatch: guess.id === answer.id,
     cells: {
       type: exactCell(guess.type, answer.type),
+      subtypes: keywordsCell(guess.subtypes, answer.subtypes),
       attack: numericCell(guess.attack, answer.attack, 2),
       defense: numericCell(guess.defense, answer.defense, 1),
       cost: costCell(guess.costDisplay, answer.costDisplay),
       pitchValues: pitchCell(guess.pitchValues, answer.pitchValues),
       talent: exactCell(guess.talent, answer.talent),
       heroClass: exactCell(effectiveClass(guess), effectiveClass(answer)),
+      keywords: keywordsCell(guess.keywords, answer.keywords),
+      set: exactCell(guess.set, answer.set),
     },
   };
 }
