@@ -110,9 +110,7 @@ function Cell({ cellKey, result, delay, showLabel = false, isHinted = false }: C
     <div
       className={`w-full flex flex-col items-center justify-center gap-0.5 rounded-lg transition-all duration-300 ${bgColor} ${
         revealed ? "cell-flip" : ""
-      } ${showLabel ? "h-[72px]" : "h-[104px]"} ${
-        isHinted ? "ring-1 ring-[#d4a843]" : ""
-      }`}
+      } ${showLabel ? "h-[72px]" : "h-[104px]"}`}
       style={{ animationDelay: `${delay}ms` }}
     >
       {showLabel && (
