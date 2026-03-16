@@ -14,6 +14,8 @@ export interface GuessResult {
   card: FabCard;
   /** True only when the guessed card's id matches the daily answer exactly. */
   isExactMatch: boolean;
+  /** Category keys for which the player has used a hint on this guess. */
+  hintedKeys?: (keyof GuessResult["cells"])[];
   cells: {
     type: CellResult;
     subtypes: CellResult;
@@ -27,6 +29,8 @@ export interface GuessResult {
     set: CellResult;
   };
 }
+
+export type CategoryKey = keyof GuessResult["cells"];
 
 /**
  * A card with a talent but no dedicated class shows "None" for class,
@@ -137,4 +141,31 @@ export function evaluateGuess(guess: FabCard, answer: FabCard): GuessResult {
 
 export function isCorrectGuess(result: GuessResult): boolean {
   return Object.values(result.cells).every((c) => c.status === "correct");
+}
+
+const CATEGORY_ORDER: CategoryKey[] = [
+  "type",
+  "subtypes",
+  "attack",
+  "defense",
+  "cost",
+  "pitchValues",
+  "talent",
+  "heroClass",
+  "keywords",
+  "set",
+];
+
+export function getNextHintKeyForGuess(result: GuessResult): CategoryKey | null {
+  const hinted = new Set(result.hintedKeys ?? []);
+
+  for (const key of CATEGORY_ORDER) {
+    const cell = result.cells[key];
+    if (!cell) continue;
+    if (cell.status === "correct") continue;
+    if (hinted.has(key)) continue;
+    return key;
+  }
+
+  return null;
 }

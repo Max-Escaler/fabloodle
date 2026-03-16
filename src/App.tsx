@@ -1,8 +1,8 @@
 import { useState, useCallback } from "react";
 import { CARDS } from "./data/cards";
 import { getDailyCard } from "./utils/dateUtils";
-import { evaluateGuess, isCorrectGuess } from "./utils/gameLogic";
-import type { GuessResult } from "./utils/gameLogic";
+import { evaluateGuess, isCorrectGuess, getNextHintKeyForGuess } from "./utils/gameLogic";
+import type { GuessResult, CategoryKey } from "./utils/gameLogic";
 import { Header } from "./components/Header";
 import { CardSearch } from "./components/CardSearch";
 import { GuessGrid } from "./components/GuessGrid";
@@ -22,6 +22,7 @@ export default function App() {
   const [showModal, setShowModal] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [stats, setStats] = useState<GameStats>(() => loadStats());
+  const [isHinting, setIsHinting] = useState(false);
 
   const guessedIds = new Set(guesses.map((g) => g.card.id));
 
@@ -63,6 +64,31 @@ export default function App() {
     [gameState, guesses, guessedIds]
   );
 
+  const canUseHint =
+    gameState === "playing" &&
+    guesses.length > 0 &&
+    getNextHintKeyForGuess(guesses[guesses.length - 1]) !== null;
+
+  const handleHintClick = useCallback(() => {
+    if (gameState !== "playing") return;
+    if (guesses.length === 0) return;
+    if (isHinting) return;
+
+    const latestIndex = guesses.length - 1;
+    const latest = guesses[latestIndex];
+    const key: CategoryKey | null = getNextHintKeyForGuess(latest);
+    if (key === null) return;
+
+    setIsHinting(true);
+    const hintedKeys = Array.from(new Set([...(latest.hintedKeys ?? []), key]));
+    const updated: GuessResult = { ...latest, hintedKeys };
+    const newGuesses = [...guesses];
+    newGuesses[latestIndex] = updated;
+    setGuesses(newGuesses);
+    saveProgress(newGuesses, gameState);
+    setIsHinting(false);
+  }, [gameState, guesses, isHinting]);
+
   return (
     <div className="min-h-screen bg-[#121213] flex flex-col">
       <Header />
@@ -91,6 +117,10 @@ export default function App() {
           <span className="flex items-center gap-2 text-white/40">
             ▲▼ = higher / lower
           </span>
+          <span className="flex items-center gap-2 text-white/40">
+            <span className="w-4 h-4 rounded-sm border border-[#d4a843] inline-block" />
+            Hint used
+          </span>
         </div>
 
         {/* Search */}
@@ -107,6 +137,17 @@ export default function App() {
         <div className="text-[#818384] text-sm">
           {guesses.length} {guesses.length === 1 ? "guess" : "guesses"}
         </div>
+
+        {/* Hint button */}
+        {gameState === "playing" && (
+          <button
+            onClick={handleHintClick}
+            disabled={!canUseHint || isHinting}
+            className="px-4 py-2 bg-[#3a3a3c] disabled:bg-[#202022] disabled:text-[#555] hover:bg-[#4a4a4e] text-white font-semibold rounded-lg text-sm transition-colors"
+          >
+            {canUseHint ? "Get a hint" : "No more hints"}
+          </button>
+        )}
 
         {/* Guess grid — stacked on mobile, horizontal on desktop */}
         {guesses.length > 0 && (
