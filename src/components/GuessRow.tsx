@@ -36,8 +36,6 @@ interface CellProps {
   delay: number;
   /** Show category label inside the cell (mobile) */
   showLabel?: boolean;
-  /** This cell's category has been revealed by a hint */
-  isHinted?: boolean;
 }
 
 function Arrow({ direction }: { direction: "higher" | "lower" | null }) {
@@ -87,7 +85,7 @@ function KeywordTags({ values, small }: { values: string[]; small?: boolean }) {
   );
 }
 
-function Cell({ cellKey, result, delay, showLabel = false, isHinted = false }: CellProps) {
+function Cell({ cellKey, result, delay, showLabel = false }: CellProps) {
   const [revealed, setRevealed] = useState(false);
   const showArrow = NUMERIC_KEYS.has(cellKey) && result.status !== "correct";
   const isPitch = cellKey === "pitchValues";
@@ -195,7 +193,6 @@ export function GuessRow({ result, rowIndex, isSameStats = false }: GuessRowProp
               result={result.cells[key]}
               delay={BASE_DELAY + i * CELL_STAGGER}
               showLabel
-              isHinted={result.hintedKeys?.includes(key) ?? false}
             />
           ))}
         </div>
@@ -232,8 +229,7 @@ export function GuessRow({ result, rowIndex, isSameStats = false }: GuessRowProp
             cellKey={key}
             result={result.cells[key]}
             delay={BASE_DELAY + i * CELL_STAGGER}
-            isHinted={result.hintedKeys?.includes(key) ?? false}
-          />
+           />
         ))}
       </div>
     </>
