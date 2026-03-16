@@ -165,7 +165,11 @@ function toId(name) {
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 const playable = fabCards.filter(
-  (c) => !c.types.includes("Hero") && !c.types.includes("Token")
+  (c) =>
+    !c.types.includes("Hero") &&
+    !c.types.includes("Token") &&
+    !c.types.includes("Equipment") &&
+    !c.types.includes("Demi-Hero")
 );
 
 // Group by name (each unique card name may have red/yellow/blue versions)
