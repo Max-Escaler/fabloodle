@@ -153,7 +153,6 @@ const CATEGORY_ORDER: CategoryKey[] = [
   "talent",
   "heroClass",
   "keywords",
-  "set",
 ];
 
 export function getNextHintKeyForGuess(result: GuessResult): CategoryKey | null {

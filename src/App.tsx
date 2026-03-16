@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { CARDS } from "./data/cards";
 import { getDailyCard } from "./utils/dateUtils";
-import { evaluateGuess, isCorrectGuess, getNextHintKeyForGuess } from "./utils/gameLogic";
+import { evaluateGuess, isCorrectGuess, getNextHintKeyForGuess, effectiveClass } from "./utils/gameLogic";
 import type { GuessResult, CategoryKey } from "./utils/gameLogic";
 import { Header } from "./components/Header";
 import { CardSearch } from "./components/CardSearch";
@@ -81,7 +81,51 @@ export default function App() {
 
     setIsHinting(true);
     const hintedKeys = Array.from(new Set([...(latest.hintedKeys ?? []), key]));
-    const updated: GuessResult = { ...latest, hintedKeys };
+
+    // Compute the true answer value for this category
+    let hintValue: string | number | number[] | string[];
+    switch (key) {
+      case "type":
+        hintValue = DAILY_CARD.type;
+        break;
+      case "subtypes":
+        hintValue = DAILY_CARD.subtypes;
+        break;
+      case "attack":
+        hintValue = DAILY_CARD.attack ?? "—";
+        break;
+      case "defense":
+        hintValue = DAILY_CARD.defense ?? "—";
+        break;
+      case "cost":
+        hintValue = DAILY_CARD.costDisplay;
+        break;
+      case "pitchValues":
+        hintValue = DAILY_CARD.pitchValues;
+        break;
+      case "talent":
+        hintValue = DAILY_CARD.talent;
+        break;
+      case "heroClass":
+        hintValue = effectiveClass(DAILY_CARD);
+        break;
+      case "keywords":
+        hintValue = DAILY_CARD.keywords;
+        break;
+      case "set":
+        hintValue = DAILY_CARD.set;
+        break;
+      default:
+        hintValue = latest.cells[key].value;
+        break;
+    }
+
+    const updatedCells: GuessResult["cells"] = {
+      ...latest.cells,
+      [key]: { ...latest.cells[key], value: hintValue },
+    };
+
+    const updated: GuessResult = { ...latest, hintedKeys, cells: updatedCells };
     const newGuesses = [...guesses];
     newGuesses[latestIndex] = updated;
     setGuesses(newGuesses);
