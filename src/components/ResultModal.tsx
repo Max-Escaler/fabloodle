@@ -5,6 +5,7 @@ import { buildShareText } from "../utils/shareUtils";
 import type { FabCard } from "../data/cards";
 import { CardAvatar } from "./CardAvatar";
 import type { GameStats } from "../utils/statsUtils";
+import type { GuessStats } from "../utils/puzzleService";
 
 const PITCH_COLORS: Record<number, string> = { 1: "#e74c3c", 2: "#f1c40f", 3: "#3498db" };
 const PITCH_NAMES: Record<number, string> = { 1: "Red", 2: "Yellow", 3: "Blue" };
@@ -14,14 +15,29 @@ interface ResultModalProps {
   answer: FabCard;
   guesses: GuessResult[];
   stats: GameStats;
+  /** Puzzle date for share text */
+  playDate: string;
+  /** Community average after win; null = still loading. Ignored when showGlobalAverage is false. */
+  globalStats: GuessStats | null;
+  /** When false, hide the global average block (offline / no Supabase). */
+  showGlobalAverage?: boolean;
   onClose: () => void;
 }
 
-export function ResultModal({ won, answer, guesses, stats, onClose }: ResultModalProps) {
+export function ResultModal({
+  won,
+  answer,
+  guesses,
+  stats,
+  playDate,
+  globalStats,
+  showGlobalAverage = true,
+  onClose,
+}: ResultModalProps) {
   const [copied, setCopied] = useState(false);
 
   function handleShare() {
-    const text = buildShareText(guesses, won);
+    const text = buildShareText(guesses, won, playDate);
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -101,6 +117,27 @@ export function ResultModal({ won, answer, guesses, stats, onClose }: ResultModa
           </div>
         )}
 
+        {won && showGlobalAverage && (
+          <div className="mb-5 text-center bg-[#121213] rounded-xl px-4 py-3">
+            <p className="text-[#818384] text-[10px] uppercase tracking-wide mb-1">
+              Global average (this puzzle)
+            </p>
+            {globalStats === null ? (
+              <p className="text-[#818384] text-sm">Loading…</p>
+            ) : globalStats.completionCount === 0 ? (
+              <p className="text-[#818384] text-sm">No community data yet.</p>
+            ) : (
+              <p className="text-white text-lg font-bold">
+                {globalStats.avgGuesses} guesses
+                <span className="text-[#818384] text-sm font-normal ml-2">
+                  ({globalStats.completionCount}{" "}
+                  {globalStats.completionCount === 1 ? "player" : "players"})
+                </span>
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Card stats grid */}
         <div className="grid grid-cols-3 gap-2 mb-5">
           {cardDetails.map((s) => (
@@ -119,7 +156,7 @@ export function ResultModal({ won, answer, guesses, stats, onClose }: ResultModa
         <div className="bg-[#121213] rounded-lg p-3 mb-4 text-center">
           <p className="text-[#818384] text-xs mb-2 uppercase tracking-wide">Share</p>
           <pre className="text-sm text-white font-mono leading-relaxed whitespace-pre-wrap break-words">
-            {buildShareText(guesses, won)}
+            {buildShareText(guesses, won, playDate)}
           </pre>
         </div>
 

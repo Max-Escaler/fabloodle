@@ -28,8 +28,6 @@ export function CardSearch({ cards, guessedIds, onSelect, disabled }: CardSearch
         .slice(0, 12)
     : [];
 
-  useEffect(() => { setHighlighted(0); }, [query]);
-
   function handleSelect(card: FabCard) {
     onSelect(card);
     setQuery("");
@@ -72,7 +70,11 @@ export function CardSearch({ cards, guessedIds, onSelect, disabled }: CardSearch
           autoCorrect="off"
           autoCapitalize="off"
           value={query}
-          onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setHighlighted(0);
+            setOpen(true);
+          }}
           onFocus={() => setOpen(true)}
           onBlur={() => setTimeout(() => setOpen(false), 150)}
           onKeyDown={handleKeyDown}

@@ -14,10 +14,13 @@ function hashDateString(dateStr: string): number {
   return h;
 }
 
-export function getDailyCard(cards: FabCard[]): FabCard {
-  const today = getTodayString();
-  const idx = hashDateString(today) % cards.length;
+export function getDailyCardForDate(cards: FabCard[], dateStr: string): FabCard {
+  const idx = hashDateString(dateStr) % cards.length;
   return cards[idx];
+}
+
+export function getDailyCard(cards: FabCard[]): FabCard {
+  return getDailyCardForDate(cards, getTodayString());
 }
 
 export function getTodayString(): string {

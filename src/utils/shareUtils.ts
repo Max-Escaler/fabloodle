@@ -19,8 +19,12 @@ const CATEGORY_KEYS = [
   "keywords",
 ] as const;
 
-export function buildShareText(guesses: GuessResult[], won: boolean): string {
-  const date = getTodayString();
+export function buildShareText(
+  guesses: GuessResult[],
+  won: boolean,
+  playDate: string = getTodayString()
+): string {
+  const date = playDate;
   const score = won
     ? `${guesses.length} ${guesses.length === 1 ? "guess" : "guesses"}`
     : "X";

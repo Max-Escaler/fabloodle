@@ -1,34 +1,30 @@
 import type { GuessResult } from "./gameLogic";
+import { updateArchiveSummary } from "./archiveSummary";
 
 type GameState = "playing" | "won";
 
-// Bump this whenever the GuessResult shape changes (new/removed cell keys).
-// Any saved data with a different version is silently discarded.
 const SCHEMA_VERSION = 3;
 
 interface SavedProgress {
   schemaVersion: number;
-  date: string;         // "YYYY-MM-DD" — must match today or is discarded
+  date: string;
   guesses: GuessResult[];
   gameState: GameState;
 }
 
-const STORAGE_KEY = "fabloodle_progress";
-
-function todayStr(): string {
-  return new Date().toISOString().slice(0, 10);
+function progressStorageKey(playDate: string): string {
+  return `fabloodle_progress_v3_${playDate}`;
 }
 
-export function loadProgress(): { guesses: GuessResult[]; gameState: GameState } {
+export function loadProgress(playDate: string): { guesses: GuessResult[]; gameState: GameState } {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(progressStorageKey(playDate));
     if (!raw) return { guesses: [], gameState: "playing" };
 
     const saved: SavedProgress = JSON.parse(raw);
 
-    // Discard progress from a previous day or an incompatible schema
-    if (saved.date !== todayStr() || saved.schemaVersion !== SCHEMA_VERSION) {
-      localStorage.removeItem(STORAGE_KEY);
+    if (saved.date !== playDate || saved.schemaVersion !== SCHEMA_VERSION) {
+      localStorage.removeItem(progressStorageKey(playDate));
       return { guesses: [], gameState: "playing" };
     }
 
@@ -38,10 +34,20 @@ export function loadProgress(): { guesses: GuessResult[]; gameState: GameState }
   }
 }
 
-export function saveProgress(guesses: GuessResult[], gameState: GameState): void {
+export function saveProgress(
+  playDate: string,
+  guesses: GuessResult[],
+  gameState: GameState
+): void {
   try {
-    const data: SavedProgress = { schemaVersion: SCHEMA_VERSION, date: todayStr(), guesses, gameState };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    const data: SavedProgress = {
+      schemaVersion: SCHEMA_VERSION,
+      date: playDate,
+      guesses,
+      gameState,
+    };
+    localStorage.setItem(progressStorageKey(playDate), JSON.stringify(data));
+    updateArchiveSummary(playDate, gameState, guesses.length);
   } catch {
     // localStorage unavailable
   }
