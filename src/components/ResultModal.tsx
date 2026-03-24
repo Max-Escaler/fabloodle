@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { GuessResult } from "../utils/gameLogic";
 import { effectiveClass } from "../utils/gameLogic";
+import { getTodayString } from "../utils/dateUtils";
 import { buildShareText } from "../utils/shareUtils";
 import type { FabCard } from "../data/cards";
 import { CardAvatar } from "./CardAvatar";
@@ -35,6 +36,7 @@ export function ResultModal({
   onClose,
 }: ResultModalProps) {
   const [copied, setCopied] = useState(false);
+  const isArchiveGame = playDate !== getTodayString();
 
   function handleShare() {
     const text = buildShareText(guesses, won, playDate);
@@ -74,11 +76,16 @@ export function ResultModal({
         <div className="flex flex-col items-center mb-4">
           <CardAvatar card={answer} size={100} className="mb-3 rounded-xl" />
           <p className="text-[#818384] text-sm uppercase tracking-widest mb-1">
-            {won ? "🎉 Correct!" : "Today's Card"}
+            {won ? "🎉 Correct!" : isArchiveGame ? "Archive Puzzle" : "Today's Card"}
           </p>
           <h2 className="text-white text-2xl font-bold text-center leading-tight">
             {answer.name}
           </h2>
+          {isArchiveGame && (
+            <p className="mt-1 text-xs uppercase tracking-wide text-[#f4d36f]">
+              Puzzle date: {playDate}
+            </p>
+          )}
           <div className="flex items-center gap-2 mt-1">
             <span className="text-[#d4a843] text-sm">{answer.type}</span>
             {answer.pitchValues.length > 0 && (

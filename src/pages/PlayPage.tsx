@@ -126,6 +126,7 @@ export function PlayPage() {
 }
 
 function PlayPageInner({ playDate }: { playDate: string }) {
+  const isArchiveGame = playDate !== getTodayString();
   const [guesses, setGuesses] = useState(() => loadProgress(playDate).guesses);
   const [gameState, setGameState] = useState<GameState>(() => loadProgress(playDate).gameState);
   const [answerCard, setAnswerCard] = useState<FabCard | null>(null);
@@ -298,7 +299,7 @@ function PlayPageInner({ playDate }: { playDate: string }) {
 
   return (
     <div className="min-h-screen bg-[#121213] flex flex-col">
-      <Header playDate={playDate} />
+      <Header playDate={playDate} isArchiveGame={isArchiveGame} />
 
       {toast && (
         <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-white text-black text-sm font-bold px-4 py-2 rounded-lg shadow-lg">
@@ -316,6 +317,17 @@ function PlayPageInner({ playDate }: { playDate: string }) {
 
         {!puzzleLoading && !puzzleError && answerCard && (
           <>
+            {isArchiveGame && (
+              <div className="w-full max-w-2xl rounded-xl border border-[#d4a843]/30 bg-[#d4a843]/10 px-4 py-3 text-center">
+                <p className="text-[#f4d36f] text-xs font-semibold uppercase tracking-[0.2em]">
+                  Archive Puzzle
+                </p>
+                <p className="mt-1 text-sm text-[#d7d7d7]">
+                  You are playing the puzzle from <span className="font-semibold text-white">{playDate}</span>, not today&apos;s game.
+                </p>
+              </div>
+            )}
+
             <div className="flex flex-wrap justify-center gap-5 text-sm text-[#818384]">
               <span className="flex items-center gap-2">
                 <span className="w-4 h-4 rounded-sm bg-[#538d4e] inline-block" />
