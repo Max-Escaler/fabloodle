@@ -1,6 +1,5 @@
 import { useState } from "react";
 import type { GuessResult } from "../utils/gameLogic";
-import { effectiveClass } from "../utils/gameLogic";
 import { getTodayString } from "../utils/dateUtils";
 import { buildShareText } from "../utils/shareUtils";
 import type { FabCard } from "../data/cards";
@@ -9,7 +8,6 @@ import type { GameStats } from "../utils/statsUtils";
 import type { GuessStats } from "../utils/puzzleService";
 
 const PITCH_COLORS: Record<number, string> = { 1: "#e74c3c", 2: "#f1c40f", 3: "#3498db" };
-const PITCH_NAMES: Record<number, string> = { 1: "Red", 2: "Yellow", 3: "Blue" };
 
 interface ResultModalProps {
   won: boolean;
@@ -45,23 +43,6 @@ export function ResultModal({
       setTimeout(() => setCopied(false), 2000);
     });
   }
-
-  const pitchLabel =
-    answer.pitchValues.length === 0
-      ? "Colorless"
-      : answer.pitchValues.map((v) => PITCH_NAMES[v] ?? v).join(", ");
-
-  const cardDetails = [
-    { label: "Type",     value: answer.type },
-    { label: "Subtype",  value: answer.subtypes.join(", ") || "—" },
-    { label: "Attack",   value: answer.attack ?? "—" },
-    { label: "Defense",  value: answer.defense ?? "—" },
-    { label: "Cost",     value: answer.costDisplay },
-    { label: "Colors",   value: pitchLabel },
-    { label: "Talent",   value: answer.talent },
-    { label: "Class",    value: effectiveClass(answer) },
-    { label: "Keywords", value: answer.keywords.join(", ") || "—" },
-  ];
 
   return (
     <div
@@ -144,20 +125,6 @@ export function ResultModal({
             )}
           </div>
         )}
-
-        {/* Card stats grid */}
-        <div className="grid grid-cols-3 gap-2 mb-5">
-          {cardDetails.map((s) => (
-            <div key={s.label} className="bg-[#121213] rounded-lg p-2 text-center">
-              <div className="text-[#818384] text-[10px] uppercase tracking-wide mb-0.5">
-                {s.label}
-              </div>
-              <div className="text-white text-xs font-semibold leading-tight">
-                {s.value}
-              </div>
-            </div>
-          ))}
-        </div>
 
         {/* Share preview */}
         <div className="bg-[#121213] rounded-lg p-3 mb-4 text-center">
