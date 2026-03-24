@@ -117,10 +117,6 @@ export function ResultModal({
             ) : (
               <p className="text-white text-lg font-bold">
                 {globalStats.avgGuesses} guesses
-                <span className="text-[#818384] text-sm font-normal ml-2">
-                  ({globalStats.completionCount}{" "}
-                  {globalStats.completionCount === 1 ? "player" : "players"})
-                </span>
               </p>
             )}
           </div>
