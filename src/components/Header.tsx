@@ -14,7 +14,7 @@ export function Header({ playDate, isArchiveGame = false }: HeaderProps) {
           to="/archive"
           className="text-[#818384] hover:text-[#d4a843] transition-colors text-xs font-semibold uppercase tracking-wide"
         >
-          Archive
+          Past Fabloodles
         </Link>
       </div>
       <div className="flex flex-col items-center">
@@ -38,15 +38,16 @@ export function Header({ playDate, isArchiveGame = false }: HeaderProps) {
           </span>
         )}
       </div>
-      <div className="w-12 flex items-center justify-end">
+      <div className="w-24 flex items-center justify-end text-[11px] text-[#6f7073] tracking-wide">
+        <span className="mr-1">Made by:</span>
         <a
-          href="https://fabtcg.com"
+          href="https://twitter.com/mx_bloom"
           target="_blank"
           rel="noopener noreferrer"
-          title="Flesh and Blood TCG"
-          className="text-[#818384] hover:text-white transition-colors text-sm"
+          title="MXBloom on Twitter"
+          className="text-[#818384] hover:text-[#d4a843] transition-colors"
         >
-          FAB
+          MXBloom
         </a>
       </div>
     </header>
