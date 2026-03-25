@@ -28,7 +28,7 @@ export function buildShareText(
   const score = won
     ? `${guesses.length} ${guesses.length === 1 ? "guess" : "guesses"}`
     : "X";
-  const header = `Fabloodle ${date} — ${score}`;
+  const header = `fabloodle.com ${date} — ${score}`;
 
   const rows = guesses
     .map((g) =>
