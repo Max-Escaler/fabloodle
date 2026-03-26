@@ -81,13 +81,10 @@ export function HowToPlayModal({ onClose }: HowToPlayModalProps) {
 
         <ul className="text-[#d0d0d0] text-sm space-y-2 mb-6 list-disc pl-5">
           <li>
-            After each guess, every category (Type, Subtype, Attack, Defense, Cost, Colors, Talent,
-            Class, Keywords) is color-coded: green means a match, gold means close or partial, gray
-            means no match.
+            Green is correct, Yellow means close or partial, Grey is incorrect
           </li>
           <li>
-            For Attack, Defense, and Cost, arrows show whether the answer is higher or lower than your
-            guess.
+            Arrows show whether the answer is higher or lower than your guess
           </li>
         </ul>
 
