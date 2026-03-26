@@ -13,6 +13,7 @@ import { Header } from "../components/Header";
 import { CardSearch } from "../components/CardSearch";
 import { GuessGrid } from "../components/GuessGrid";
 import { ResultModal } from "../components/ResultModal";
+import { HowToPlayModal } from "../components/HowToPlayModal";
 import type { FabCard } from "../data/cards";
 import { recordWin, loadStats } from "../utils/statsUtils";
 import type { GameStats } from "../utils/statsUtils";
@@ -25,6 +26,7 @@ import {
   fetchGuessStats,
 } from "../utils/puzzleService";
 import type { GuessStats } from "../utils/puzzleService";
+import { isHowToPlayDismissed } from "../utils/howToPlayStorage";
 
 const PITCH_COLORS: Record<number, string> = { 1: "#e74c3c", 2: "#f1c40f", 3: "#3498db" };
 const PITCH_NAMES: Record<number, string> = { 1: "Red", 2: "Yellow", 3: "Blue" };
@@ -138,6 +140,7 @@ function PlayPageInner({ playDate }: { playDate: string }) {
   const [stats, setStats] = useState<GameStats>(() => loadStats());
   const [hintPopup, setHintPopup] = useState<HintPopupData | null>(null);
   const [globalStats, setGlobalStats] = useState<GuessStats | null>(null);
+  const [showHowToPlay, setShowHowToPlay] = useState(() => !isHowToPlayDismissed());
 
   const completionSentRef = useRef(false);
 
@@ -390,6 +393,8 @@ function PlayPageInner({ playDate }: { playDate: string }) {
       {hintPopup && (
         <HintPopup data={hintPopup} onClose={() => setHintPopup(null)} />
       )}
+
+      {showHowToPlay && <HowToPlayModal onClose={() => setShowHowToPlay(false)} />}
 
       {showModal && answerCard && (
         <ResultModal
