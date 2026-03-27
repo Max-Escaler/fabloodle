@@ -27,6 +27,7 @@ import {
 } from "../utils/puzzleService";
 import type { GuessStats } from "../utils/puzzleService";
 import { isHowToPlayDismissed } from "../utils/howToPlayStorage";
+import { trackGuessSubmitted } from "../utils/analytics";
 
 const PITCH_COLORS: Record<number, string> = { 1: "#e74c3c", 2: "#f1c40f", 3: "#3498db" };
 const PITCH_NAMES: Record<number, string> = { 1: "Red", 2: "Yellow", 3: "Blue" };
@@ -201,6 +202,12 @@ function PlayPageInner({ playDate }: { playDate: string }) {
 
       const result = evaluateGuess(card, answerCard);
       const newGuesses = [...guesses, result];
+
+      trackGuessSubmitted({
+        playDate,
+        guessNumber: newGuesses.length,
+        won: result.isExactMatch,
+      });
 
       if (result.isExactMatch) {
         const newState: GameState = "won";
