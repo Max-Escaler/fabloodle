@@ -338,24 +338,6 @@ function PlayPageInner({ playDate }: { playDate: string }) {
               </div>
             )}
 
-            <div className="flex flex-wrap justify-center gap-5 text-sm text-[#818384]">
-              <span className="flex items-center gap-2">
-                <span className="w-4 h-4 rounded-sm bg-[#538d4e] inline-block" />
-                Correct
-              </span>
-              <span className="flex items-center gap-2">
-                <span className="w-4 h-4 rounded-sm bg-[#b59f3b] inline-block" />
-                Close
-              </span>
-              <span className="flex items-center gap-2">
-                <span className="w-4 h-4 rounded-sm bg-[#3a3a3c] inline-block" />
-                Wrong
-              </span>
-              <span className="flex items-center gap-2 text-white/40">
-                ▲▼ = higher / lower
-              </span>
-            </div>
-
             <div className="w-full max-w-2xl">
               <CardSearch
                 cards={CARDS}
