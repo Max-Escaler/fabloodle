@@ -8,6 +8,7 @@ import {
   getNextHintKeyForGuess,
   effectiveClass,
 } from "../utils/gameLogic";
+import { getCardReleases } from "../utils/cardReleases";
 import type { GuessResult, CategoryKey, CellResult } from "../utils/gameLogic";
 import { Header } from "../components/Header";
 import { CardSearch } from "../components/CardSearch";
@@ -42,7 +43,7 @@ const CATEGORY_LABELS: Record<CategoryKey, string> = {
   talent: "Talent",
   heroClass: "Class",
   keywords: "Keywords",
-  set: "Set",
+  releases: "Sets",
 };
 
 interface HintPopupData {
@@ -229,7 +230,7 @@ function PlayPageInner({ playDate }: { playDate: string }) {
 
         setTimeout(
           () => setShowModal(true),
-          newGuesses.length * 50 + 8 * 120 + 500
+          newGuesses.length * 50 + 10 * 120 + 500
         );
       } else {
         setGuesses(newGuesses);
@@ -293,8 +294,8 @@ function PlayPageInner({ playDate }: { playDate: string }) {
       case "keywords":
         hintValue = answerCard.keywords;
         break;
-      default:
-        hintValue = answerCard.set;
+      case "releases":
+        hintValue = getCardReleases(answerCard).map((r) => String(r));
         break;
     }
     setHintPopup({ label: CATEGORY_LABELS[key], value: hintValue });

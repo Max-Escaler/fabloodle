@@ -1,4 +1,5 @@
 import type { FabCard } from "../data/cards";
+import { getCardReleases } from "./cardReleases";
 
 export type CellStatus = "correct" | "close" | "wrong";
 export type Direction = "higher" | "lower" | null;
@@ -26,7 +27,8 @@ export interface GuessResult {
     talent: CellResult;
     heroClass: CellResult;
     keywords: CellResult;
-    set: CellResult;
+    /** All Release products (from fab-cards) this card name appears in */
+    releases: CellResult;
   };
 }
 
@@ -134,7 +136,10 @@ export function evaluateGuess(guess: FabCard, answer: FabCard): GuessResult {
       talent: exactCell(guess.talent, answer.talent),
       heroClass: exactCell(effectiveClass(guess), effectiveClass(answer)),
       keywords: keywordsCell(guess.keywords, answer.keywords),
-      set: exactCell(guess.set, answer.set),
+      releases: keywordsCell(
+        getCardReleases(guess).map((r) => String(r)),
+        getCardReleases(answer).map((r) => String(r))
+      ),
     },
   };
 }
@@ -143,7 +148,7 @@ export function isCorrectGuess(result: GuessResult): boolean {
   return Object.values(result.cells).every((c) => c.status === "correct");
 }
 
-const CATEGORY_ORDER: CategoryKey[] = [
+export const DISPLAY_GRID_CATEGORY_KEYS: readonly CategoryKey[] = [
   "type",
   "subtypes",
   "attack",
@@ -153,7 +158,16 @@ const CATEGORY_ORDER: CategoryKey[] = [
   "talent",
   "heroClass",
   "keywords",
+  "releases",
 ];
+
+/** Wrong card, but every displayed grid column matches the answer. */
+export function isSameStatsWrongCard(result: GuessResult): boolean {
+  if (result.isExactMatch) return false;
+  return DISPLAY_GRID_CATEGORY_KEYS.every((key) => result.cells[key].status === "correct");
+}
+
+const CATEGORY_ORDER: CategoryKey[] = [...DISPLAY_GRID_CATEGORY_KEYS];
 
 export function getNextHintKeyForGuess(result: GuessResult): CategoryKey | null {
   const hinted = new Set(result.hintedKeys ?? []);

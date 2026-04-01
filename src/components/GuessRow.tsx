@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import type { GuessResult, CellResult } from "../utils/gameLogic";
+import { DISPLAY_GRID_CATEGORY_KEYS } from "../utils/gameLogic";
 import { CardAvatar } from "./CardAvatar";
 
 const NUMERIC_KEYS = new Set(["attack", "defense", "cost"]);
-const TAG_KEYS = new Set(["keywords", "subtypes"]);
+const TAG_KEYS = new Set(["keywords", "subtypes", "releases"]);
 
 const DISPLAY_SHORT: Record<string, string> = {
   "Defense Reaction": "Def React",
@@ -22,6 +23,7 @@ const CELL_LABELS: Record<string, string> = {
   talent:      "Talent",
   heroClass:   "Class",
   keywords:    "Keywords",
+  releases:    "Sets",
 };
 
 const PITCH_COLORS: Record<number, string> = {
@@ -141,21 +143,9 @@ function Cell({ cellKey, result, delay, showLabel = false }: CellProps) {
 interface GuessRowProps {
   result: GuessResult;
   rowIndex: number;
-  /** All 7 categories matched the answer but the card itself is different */
+  /** All grid categories matched the answer but the card itself is different */
   isSameStats?: boolean;
 }
-
-const CELL_KEYS = [
-  "type",
-  "subtypes",
-  "attack",
-  "defense",
-  "cost",
-  "pitchValues",
-  "talent",
-  "heroClass",
-  "keywords",
-] as const;
 
 export function GuessRow({ result, rowIndex, isSameStats = false }: GuessRowProps) {
   const BASE_DELAY = rowIndex * 50;
@@ -163,7 +153,7 @@ export function GuessRow({ result, rowIndex, isSameStats = false }: GuessRowProp
 
   return (
     <>
-      {/* ── Mobile layout: card info row + 4×2 grid ── */}
+      {/* ── Mobile layout: card info row + 3-col grid (10 cells) ── */}
       <div
         className={`sm:hidden flex flex-col gap-2 p-2 rounded-xl bg-[#1a1a1b] border ${
           isSameStats ? "border-[#d4a843]" : "border-[#3a3a3c]"
@@ -186,7 +176,7 @@ export function GuessRow({ result, rowIndex, isSameStats = false }: GuessRowProp
           )}
         </div>
         <div className="grid grid-cols-3 gap-1.5">
-          {CELL_KEYS.map((key, i) => (
+          {DISPLAY_GRID_CATEGORY_KEYS.map((key, i) => (
             <Cell
               key={key}
               cellKey={key}
@@ -200,8 +190,8 @@ export function GuessRow({ result, rowIndex, isSameStats = false }: GuessRowProp
 
       {/* ── Desktop layout: horizontal grid row ── */}
       <div
-        className="hidden sm:grid items-center gap-2 w-full px-3 min-w-[1020px]"
-        style={{ gridTemplateColumns: "minmax(160px, 210px) repeat(9, minmax(84px, 106px))" }}
+        className="hidden sm:grid items-center gap-2 w-full px-3 min-w-[1120px]"
+        style={{ gridTemplateColumns: "minmax(160px, 210px) repeat(10, minmax(72px, 100px))" }}
       >
         <div
           className={`flex items-center gap-3 min-w-0 rounded-lg px-2 py-1 ${
@@ -223,7 +213,7 @@ export function GuessRow({ result, rowIndex, isSameStats = false }: GuessRowProp
             )}
           </div>
         </div>
-        {CELL_KEYS.map((key, i) => (
+        {DISPLAY_GRID_CATEGORY_KEYS.map((key, i) => (
           <Cell
             key={key}
             cellKey={key}

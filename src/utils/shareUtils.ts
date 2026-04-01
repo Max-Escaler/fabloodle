@@ -17,6 +17,7 @@ const CATEGORY_KEYS = [
   "talent",
   "heroClass",
   "keywords",
+  "releases",
 ] as const;
 
 export function buildShareText(

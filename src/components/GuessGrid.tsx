@@ -1,5 +1,5 @@
 import type { GuessResult } from "../utils/gameLogic";
-import { isCorrectGuess } from "../utils/gameLogic";
+import { isSameStatsWrongCard } from "../utils/gameLogic";
 import { GuessRow } from "./GuessRow";
 import { CategoryHeader } from "./CategoryHeader";
 
@@ -17,7 +17,7 @@ export function GuessGrid({ guesses }: GuessGridProps) {
             key={g.card.id}
             result={g}
             rowIndex={guesses.length - 1 - i}
-            isSameStats={isCorrectGuess(g) && !g.isExactMatch}
+            isSameStats={isSameStatsWrongCard(g)}
           />
         ))}
       </div>

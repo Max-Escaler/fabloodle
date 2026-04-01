@@ -3,7 +3,7 @@ import { updateArchiveSummary } from "./archiveSummary";
 
 type GameState = "playing" | "won";
 
-const SCHEMA_VERSION = 3;
+const SCHEMA_VERSION = 4;
 
 interface SavedProgress {
   schemaVersion: number;
