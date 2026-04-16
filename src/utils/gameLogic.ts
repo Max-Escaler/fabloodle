@@ -35,12 +35,17 @@ export interface GuessResult {
 export type CategoryKey = keyof GuessResult["cells"];
 
 /**
- * A card with a talent but no dedicated class shows "None" for class,
+ * A card with a talent but no dedicated class shows ["None"] for class,
  * because "Generic" would be misleading — it belongs to a talent not a class.
- * Only truly classless + talentless cards say "Generic".
+ * Only truly classless + talentless cards say ["Generic"].
  */
-export function effectiveClass(card: FabCard): string {
-  if (card.heroClass === "Generic" && card.talent !== "None") return "None";
+export function effectiveClass(card: FabCard): string[] {
+  if (
+    card.heroClass.length === 1 &&
+    card.heroClass[0] === "Generic" &&
+    card.talent !== "None"
+  )
+    return ["None"];
   return card.heroClass;
 }
 
@@ -134,7 +139,7 @@ export function evaluateGuess(guess: FabCard, answer: FabCard): GuessResult {
       cost: costCell(guess.costDisplay, answer.costDisplay),
       pitchValues: pitchCell(guess.pitchValues, answer.pitchValues),
       talent: exactCell(guess.talent, answer.talent),
-      heroClass: exactCell(effectiveClass(guess), effectiveClass(answer)),
+      heroClass: keywordsCell(effectiveClass(guess), effectiveClass(answer)),
       keywords: keywordsCell(guess.keywords, answer.keywords),
       releases: keywordsCell(
         getCardReleases(guess).map((r) => String(r)),

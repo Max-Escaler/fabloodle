@@ -113,9 +113,10 @@ function getMainRarity(rarities) {
   return best;
 }
 
-function getHeroClass(classes) {
+function getHeroClasses(classes) {
   const skip = new Set(["NotClassed", "Generic"]);
-  return classes.find((c) => !skip.has(c)) ?? "Generic";
+  const filtered = classes.filter((c) => !skip.has(c));
+  return filtered.length > 0 ? filtered : ["Generic"];
 }
 
 function getTalent(talents) {
@@ -206,7 +207,7 @@ for (const [name, versions] of byName) {
   }
 
   const talent = getTalent(canonical.talents);
-  const heroClass = getHeroClass(canonical.classes ?? []);
+  const heroClass = getHeroClasses(canonical.classes ?? []);
   const rarity = getMainRarity(canonical.rarities ?? []);
   const imageUrl = getImageUrl(canonical.printings ?? []);
   const keywords = [...new Set(versions.flatMap((v) => v.keywords ?? []))].sort();
@@ -241,7 +242,7 @@ const lines = [
   `  /** Pitch values this card comes in: [] = colorless, [1]=red, [2]=yellow, [3]=blue */`,
   `  pitchValues: number[];`,
   `  talent: string;`,
-  `  heroClass: string;`,
+  `  heroClass: string[];`,
   `  rarity: string;`,
   `  /** Keywords on this card, e.g. ["Go again", "Boost"] */`,
   `  keywords: string[];`,

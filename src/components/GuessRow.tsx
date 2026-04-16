@@ -4,7 +4,7 @@ import { DISPLAY_GRID_CATEGORY_KEYS } from "../utils/gameLogic";
 import { CardAvatar } from "./CardAvatar";
 
 const NUMERIC_KEYS = new Set(["attack", "defense", "cost"]);
-const TAG_KEYS = new Set(["keywords", "subtypes", "releases"]);
+const TAG_KEYS = new Set(["keywords", "subtypes", "releases", "heroClass"]);
 
 const DISPLAY_SHORT: Record<string, string> = {
   "Defense Reaction": "Def React",

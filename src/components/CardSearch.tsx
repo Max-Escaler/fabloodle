@@ -120,7 +120,7 @@ export function CardSearch({ cards, guessedIds, onSelect, disabled }: CardSearch
                 <div className="flex items-center gap-2 mt-0.5">
                   <span className="text-[#818384] text-xs truncate">
                     {card.type}
-                    {card.heroClass !== "Generic" ? ` · ${card.heroClass}` : ""}
+                    {card.heroClass.some((c) => c !== "Generic") ? ` · ${card.heroClass.filter((c) => c !== "Generic").join("/")}` : ""}
                     {card.talent !== "None" ? ` · ${card.talent}` : ""}
                   </span>
                   {card.pitchValues.length > 0 && (
