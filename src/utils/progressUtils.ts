@@ -1,14 +1,23 @@
-import type { GuessResult } from "./gameLogic";
+import type { FabCard } from "../data/cards";
+import type { GuessResult, CategoryKey } from "./gameLogic";
+import { evaluateGuess } from "./gameLogic";
 import { updateArchiveSummary } from "./archiveSummary";
 
 type GameState = "playing" | "won";
 
-const SCHEMA_VERSION = 5;
+const SCHEMA_VERSION = 6;
 
 interface SavedProgress {
   schemaVersion: number;
   date: string;
-  guesses: GuessResult[];
+  cardIds: string[];
+  hintedKeysByGuess: (CategoryKey[] | undefined)[];
+  gameState: GameState;
+}
+
+export interface LoadedProgress {
+  cardIds: string[];
+  hintedKeysByGuess: (CategoryKey[] | undefined)[];
   gameState: GameState;
 }
 
@@ -17,51 +26,71 @@ function progressStorageKey(playDate: string): string {
 }
 
 /**
- * Migrate saved guesses from schema v4 (heroClass as string) to v5 (heroClass
- * as string[]). Touches both the card object and the heroClass cell value on
- * every guess.
+ * Load saved progress. Returns only the stable identifiers (card IDs, hinted
+ * keys, game state) regardless of which schema version was persisted. Full
+ * GuessResult objects are rebuilt later via {@link reconstructGuesses}.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function migrateV4toV5(saved: any): SavedProgress {
-  for (const g of saved.guesses) {
-    if (typeof g.card?.heroClass === "string") {
-      g.card.heroClass = [g.card.heroClass];
-    }
-    const hcCell = g.cells?.heroClass;
-    if (hcCell && typeof hcCell.value === "string") {
-      hcCell.value = [hcCell.value];
-    }
-  }
-  saved.schemaVersion = SCHEMA_VERSION;
-  return saved as SavedProgress;
-}
-
-export function loadProgress(playDate: string): { guesses: GuessResult[]; gameState: GameState } {
+export function loadProgress(playDate: string): LoadedProgress {
+  const empty: LoadedProgress = { cardIds: [], hintedKeysByGuess: [], gameState: "playing" };
   try {
     const raw = localStorage.getItem(progressStorageKey(playDate));
-    if (!raw) return { guesses: [], gameState: "playing" };
+    if (!raw) return empty;
 
-    let saved = JSON.parse(raw);
-
+    const saved = JSON.parse(raw);
     if (saved.date !== playDate) {
       localStorage.removeItem(progressStorageKey(playDate));
-      return { guesses: [], gameState: "playing" };
+      return empty;
     }
 
-    if (saved.schemaVersion === 4) {
-      saved = migrateV4toV5(saved);
-      localStorage.setItem(progressStorageKey(playDate), JSON.stringify(saved));
+    // Current format: cardIds stored directly
+    if (Array.isArray(saved.cardIds)) {
+      return {
+        cardIds: saved.cardIds,
+        hintedKeysByGuess: saved.hintedKeysByGuess ?? [],
+        gameState: saved.gameState ?? "playing",
+      };
     }
 
-    if (saved.schemaVersion !== SCHEMA_VERSION) {
-      localStorage.removeItem(progressStorageKey(playDate));
-      return { guesses: [], gameState: "playing" };
+    // Legacy format: extract IDs from full GuessResult objects
+    if (Array.isArray(saved.guesses)) {
+      const cardIds: string[] = [];
+      const hintedKeysByGuess: (CategoryKey[] | undefined)[] = [];
+      for (const g of saved.guesses) {
+        const id = g.card?.id;
+        if (id) {
+          cardIds.push(id);
+          hintedKeysByGuess.push(g.hintedKeys);
+        }
+      }
+      return { cardIds, hintedKeysByGuess, gameState: saved.gameState ?? "playing" };
     }
 
-    return { guesses: saved.guesses, gameState: saved.gameState };
+    return empty;
   } catch {
-    return { guesses: [], gameState: "playing" };
+    return empty;
   }
+}
+
+/**
+ * Rebuild full GuessResult objects from card IDs using the current card data
+ * and game logic. This is the only place schema-dependent objects are created,
+ * so future schema changes never require migration code.
+ */
+export function reconstructGuesses(
+  { cardIds, hintedKeysByGuess }: LoadedProgress,
+  answerCard: FabCard,
+  allCards: FabCard[]
+): GuessResult[] {
+  const cardMap = new Map(allCards.map((c) => [c.id, c]));
+  const results: GuessResult[] = [];
+  for (let i = 0; i < cardIds.length; i++) {
+    const card = cardMap.get(cardIds[i]);
+    if (!card) continue;
+    const result = evaluateGuess(card, answerCard);
+    const hintedKeys = hintedKeysByGuess[i];
+    results.push(hintedKeys ? { ...result, hintedKeys } : result);
+  }
+  return results;
 }
 
 export function saveProgress(
@@ -73,7 +102,8 @@ export function saveProgress(
     const data: SavedProgress = {
       schemaVersion: SCHEMA_VERSION,
       date: playDate,
-      guesses,
+      cardIds: guesses.map((g) => g.card.id),
+      hintedKeysByGuess: guesses.map((g) => g.hintedKeys),
       gameState,
     };
     localStorage.setItem(progressStorageKey(playDate), JSON.stringify(data));

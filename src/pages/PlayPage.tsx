@@ -18,7 +18,7 @@ import { HowToPlayModal } from "../components/HowToPlayModal";
 import type { FabCard } from "../data/cards";
 import { recordWin, loadStats } from "../utils/statsUtils";
 import type { GameStats } from "../utils/statsUtils";
-import { loadProgress, saveProgress } from "../utils/progressUtils";
+import { loadProgress, reconstructGuesses, saveProgress } from "../utils/progressUtils";
 import { isValidPlayDate } from "../utils/playDate";
 import { isSupabaseConfigured } from "../lib/supabase";
 import {
@@ -131,8 +131,9 @@ export function PlayPage() {
 
 function PlayPageInner({ playDate }: { playDate: string }) {
   const isArchiveGame = playDate !== getTodayString();
-  const [guesses, setGuesses] = useState(() => loadProgress(playDate).guesses);
-  const [gameState, setGameState] = useState<GameState>(() => loadProgress(playDate).gameState);
+  const savedProgress = useMemo(() => loadProgress(playDate), [playDate]);
+  const [guesses, setGuesses] = useState<GuessResult[]>([]);
+  const [gameState, setGameState] = useState<GameState>(savedProgress.gameState);
   const [answerCard, setAnswerCard] = useState<FabCard | null>(null);
   const [puzzleError, setPuzzleError] = useState<string | null>(null);
   const [puzzleLoading, setPuzzleLoading] = useState(true);
@@ -159,6 +160,7 @@ function PlayPageInner({ playDate }: { playDate: string }) {
       setPuzzleError(null);
       setAnswerCard(null);
       setPuzzleLoading(true);
+      let card: FabCard | undefined;
       if (isSupabaseConfigured()) {
         const id = await fetchCardIdForDate(playDate);
         if (cancelled) return;
@@ -167,15 +169,19 @@ function PlayPageInner({ playDate }: { playDate: string }) {
           setPuzzleLoading(false);
           return;
         }
-        const card = CARDS.find((c) => c.id === id);
+        card = CARDS.find((c) => c.id === id);
         if (!card) {
-          setPuzzleError("Puzzle card id is not in this app’s card list.");
+          setPuzzleError("Puzzle card id is not in this app's card list.");
           setPuzzleLoading(false);
           return;
         }
-        setAnswerCard(card);
       } else {
-        setAnswerCard(getDailyCardForDate(CARDS, playDate));
+        card = getDailyCardForDate(CARDS, playDate);
+      }
+      if (cancelled) return;
+      setAnswerCard(card);
+      if (savedProgress.cardIds.length > 0) {
+        setGuesses(reconstructGuesses(savedProgress, card, CARDS));
       }
       setPuzzleLoading(false);
     })();
@@ -183,7 +189,7 @@ function PlayPageInner({ playDate }: { playDate: string }) {
     return () => {
       cancelled = true;
     };
-  }, [playDate]);
+  }, [playDate, savedProgress]);
 
   const guessedIds = useMemo(() => new Set(guesses.map((g) => g.card.id)), [guesses]);
 
