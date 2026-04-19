@@ -1,10 +1,13 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 interface HeaderProps {
   /** Active puzzle date shown in subtitle (YYYY-MM-DD) */
   playDate: string;
   isArchiveGame?: boolean;
 }
+
+const NAV_LINK_BASE =
+  "inline-flex items-center justify-center rounded-lg border border-[#3a3a3c] bg-[#1a1a1b] px-3 py-1.5 text-[#d7d7d7] hover:text-white hover:border-[#d4a843]/60 active:bg-[#2a2a2b] transition-colors text-[11px] sm:text-xs font-semibold uppercase tracking-wide whitespace-nowrap shrink-0";
 
 function BrandBlock({ playDate, isArchiveGame }: { playDate: string; isArchiveGame: boolean }) {
   return (
@@ -34,14 +37,32 @@ function BrandBlock({ playDate, isArchiveGame }: { playDate: string; isArchiveGa
 
 function ArchiveLink({ className }: { className?: string }) {
   return (
-    <Link
-      to="/archive"
-      className={
-        className ??
-        "text-[#818384] hover:text-[#d4a843] transition-colors text-[10px] sm:text-xs font-semibold uppercase tracking-wide whitespace-nowrap shrink-0"
-      }
-    >
+    <Link to="/archive" className={className ?? NAV_LINK_BASE}>
       Past Fabloodles
+    </Link>
+  );
+}
+
+interface BrowseLinkProps {
+  className?: string;
+  /** Path to return to from the browser page (preserves the active puzzle date). */
+  returnTo: string;
+  /** When true, render as the "Back to Puzzle" variant. */
+  onBrowserPage: boolean;
+}
+
+function BrowseLink({ className, returnTo, onBrowserPage }: BrowseLinkProps) {
+  if (onBrowserPage) {
+    const safeReturn = returnTo && returnTo !== "/cards" ? returnTo : "/";
+    return (
+      <Link to={safeReturn} className={className ?? NAV_LINK_BASE}>
+        Back to Puzzle
+      </Link>
+    );
+  }
+  return (
+    <Link to="/cards" state={{ returnTo }} className={className ?? NAV_LINK_BASE}>
+      Browse Cards
     </Link>
   );
 }
@@ -69,21 +90,33 @@ function Credit({ className }: { className?: string }) {
 }
 
 export function Header({ playDate, isArchiveGame = false }: HeaderProps) {
+  const location = useLocation();
+  const onBrowserPage = location.pathname === "/cards";
+  // When clicking Browse Cards from anywhere, remember the current path so the
+  // user can return to the same puzzle (today's, or a specific archive date).
+  const returnTo = onBrowserPage
+    ? ((location.state as { returnTo?: string } | null)?.returnTo ?? "/")
+    : location.pathname;
+
   return (
     <header className="w-full border-b border-[#3a3a3c] py-3 px-4 sm:py-4 sm:px-6">
-      {/* Mobile: brand full width, then a single row for links — no overlap */}
+      {/* Mobile: brand, then nav buttons paired together, then credit on its own row */}
       <div className="flex sm:hidden flex-col items-center gap-2.5">
         <BrandBlock playDate={playDate} isArchiveGame={isArchiveGame} />
-        <div className="flex w-full max-w-md mx-auto items-center justify-between gap-3 pt-0.5 border-t border-[#3a3a3c]/60">
+        <div className="flex items-center justify-center gap-2 pt-0.5">
           <ArchiveLink />
-          <Credit />
+          <BrowseLink returnTo={returnTo} onBrowserPage={onBrowserPage} />
+        </div>
+        <div className="flex w-full max-w-md mx-auto items-center justify-center pt-0.5 border-t border-[#3a3a3c]/60">
+          <Credit className="text-[10px] text-[#6f7073] tracking-wide whitespace-nowrap" />
         </div>
       </div>
 
-      {/* sm+: three columns with balanced space — sides no longer crush the center */}
+      {/* sm+: three columns. Left column has the two nav buttons side by side. */}
       <div className="hidden sm:flex items-center justify-between gap-3 lg:gap-6">
-        <div className="flex-shrink-0 min-w-0 max-w-[min(11rem,32%)]">
-          <ArchiveLink className="text-[#818384] hover:text-[#d4a843] transition-colors text-xs font-semibold uppercase tracking-wide leading-snug" />
+        <div className="flex-shrink-0 min-w-0 flex items-center gap-2">
+          <ArchiveLink />
+          <BrowseLink returnTo={returnTo} onBrowserPage={onBrowserPage} />
         </div>
         <div className="flex-1 flex justify-center min-w-0">
           <BrandBlock playDate={playDate} isArchiveGame={isArchiveGame} />

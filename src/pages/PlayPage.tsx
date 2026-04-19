@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
-import { useParams, Navigate } from "react-router-dom";
+import { useParams, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { CARDS } from "../data/cards";
 import { getDailyCardForDate, getTodayString } from "../utils/dateUtils";
 import {
@@ -130,6 +130,8 @@ export function PlayPage() {
 }
 
 function PlayPageInner({ playDate }: { playDate: string }) {
+  const location = useLocation();
+  const navigate = useNavigate();
   const isArchiveGame = playDate !== getTodayString();
   const savedProgress = useMemo(() => loadProgress(playDate), [playDate]);
   const [guesses, setGuesses] = useState<GuessResult[]>([]);
@@ -146,6 +148,12 @@ function PlayPageInner({ playDate }: { playDate: string }) {
   const [showHowToPlay, setShowHowToPlay] = useState(() => !isHowToPlayDismissed());
 
   const completionSentRef = useRef(false);
+  // Once we submit a guess from the Card Browser flow, `handleGuess`'s
+  // useCallback identity changes (its deps include `guesses`) which re-fires
+  // the effect below before react-router has committed our state-clearing
+  // navigate(). This ref de-dupes by guessCardId so we don't submit twice and
+  // trigger a spurious "Already guessed!" toast.
+  const processedGuessCardIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (gameState !== "won" || !isSupabaseConfigured()) return;
@@ -313,6 +321,19 @@ function PlayPageInner({ playDate }: { playDate: string }) {
       void fetchGuessStats(playDate).then(setGlobalStats);
     }
   }, [gameState, globalStats, playDate]);
+
+  // If the user came back from the Card Browser with a card to guess,
+  // submit it once the puzzle is loaded, then clear the state so a refresh
+  // doesn't re-submit the same guess.
+  useEffect(() => {
+    const id = (location.state as { guessCardId?: string } | null)?.guessCardId;
+    if (!id || !answerCard) return;
+    if (processedGuessCardIdRef.current === id) return;
+    processedGuessCardIdRef.current = id;
+    const card = CARDS.find((c) => c.id === id);
+    if (card) handleGuess(card);
+    navigate(location.pathname, { replace: true, state: null });
+  }, [answerCard, location.state, location.pathname, handleGuess, navigate]);
 
   return (
     <div className="min-h-screen bg-[#121213] flex flex-col">
