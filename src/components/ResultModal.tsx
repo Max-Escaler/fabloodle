@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { GuessResult } from "../utils/gameLogic";
 import { getTodayString } from "../utils/dateUtils";
 import { buildShareText } from "../utils/shareUtils";
+import { trackShareClicked } from "../utils/analytics";
 import type { FabCard } from "../data/cards";
 import { CardAvatar } from "./CardAvatar";
 import type { GameStats } from "../utils/statsUtils";
@@ -50,6 +51,11 @@ export function ResultModal({
 
   function handleShare() {
     const text = buildShareText(guesses, won, playDate);
+    trackShareClicked({
+      playDate,
+      won,
+      guessCount: guesses.length,
+    });
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);

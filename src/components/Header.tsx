@@ -1,4 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
+import { trackNavLinkClicked } from "../utils/analytics";
+import type { NavLink as NavLinkName } from "../utils/analytics";
 
 interface HeaderProps {
   /** Active puzzle date shown in subtitle (YYYY-MM-DD) */
@@ -35,9 +37,13 @@ function BrandBlock({ playDate, isArchiveGame }: { playDate: string; isArchiveGa
   );
 }
 
-function ArchiveLink({ className }: { className?: string }) {
+function ArchiveLink({ className, from }: { className?: string; from: string }) {
   return (
-    <Link to="/archive" className={className ?? NAV_LINK_BASE}>
+    <Link
+      to="/archive"
+      className={className ?? NAV_LINK_BASE}
+      onClick={() => trackNavLinkClicked({ link: "past_fabloodles", from })}
+    >
       Past Fabloodles
     </Link>
   );
@@ -49,19 +55,32 @@ interface BrowseLinkProps {
   returnTo: string;
   /** When true, render as the "Back to Puzzle" variant. */
   onBrowserPage: boolean;
+  /** The pathname we're currently on — logged with the nav event. */
+  from: string;
 }
 
-function BrowseLink({ className, returnTo, onBrowserPage }: BrowseLinkProps) {
+function BrowseLink({ className, returnTo, onBrowserPage, from }: BrowseLinkProps) {
   if (onBrowserPage) {
     const safeReturn = returnTo && returnTo !== "/cards" ? returnTo : "/";
+    const linkName: NavLinkName = "back_to_puzzle";
     return (
-      <Link to={safeReturn} className={className ?? NAV_LINK_BASE}>
+      <Link
+        to={safeReturn}
+        className={className ?? NAV_LINK_BASE}
+        onClick={() => trackNavLinkClicked({ link: linkName, from })}
+      >
         Back to Puzzle
       </Link>
     );
   }
+  const linkName: NavLinkName = "browse_cards";
   return (
-    <Link to="/cards" state={{ returnTo }} className={className ?? NAV_LINK_BASE}>
+    <Link
+      to="/cards"
+      state={{ returnTo }}
+      className={className ?? NAV_LINK_BASE}
+      onClick={() => trackNavLinkClicked({ link: linkName, from })}
+    >
       Browse Cards
     </Link>
   );
@@ -104,8 +123,8 @@ export function Header({ playDate, isArchiveGame = false }: HeaderProps) {
       <div className="flex sm:hidden flex-col items-center gap-2.5">
         <BrandBlock playDate={playDate} isArchiveGame={isArchiveGame} />
         <div className="flex items-center justify-center gap-2 pt-0.5">
-          <ArchiveLink />
-          <BrowseLink returnTo={returnTo} onBrowserPage={onBrowserPage} />
+          <ArchiveLink from={location.pathname} />
+          <BrowseLink returnTo={returnTo} onBrowserPage={onBrowserPage} from={location.pathname} />
         </div>
         <div className="flex w-full max-w-md mx-auto items-center justify-center pt-0.5 border-t border-[#3a3a3c]/60">
           <Credit className="text-[10px] text-[#6f7073] tracking-wide whitespace-nowrap" />
@@ -115,8 +134,8 @@ export function Header({ playDate, isArchiveGame = false }: HeaderProps) {
       {/* sm+: three columns. Left column has the two nav buttons side by side. */}
       <div className="hidden sm:flex items-center justify-between gap-3 lg:gap-6">
         <div className="flex-shrink-0 min-w-0 flex items-center gap-2">
-          <ArchiveLink />
-          <BrowseLink returnTo={returnTo} onBrowserPage={onBrowserPage} />
+          <ArchiveLink from={location.pathname} />
+          <BrowseLink returnTo={returnTo} onBrowserPage={onBrowserPage} from={location.pathname} />
         </div>
         <div className="flex-1 flex justify-center min-w-0">
           <BrandBlock playDate={playDate} isArchiveGame={isArchiveGame} />

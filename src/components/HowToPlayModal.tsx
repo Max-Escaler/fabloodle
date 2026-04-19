@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { dismissHowToPlay } from "../utils/howToPlayStorage";
+import { trackHowToPlayDismissed } from "../utils/analytics";
 
 const PITCH = { 1: "#e74c3c", 2: "#f1c40f", 3: "#3498db" } as const;
 
@@ -52,6 +53,7 @@ function PitchDots() {
 
 export function HowToPlayModal({ onClose }: HowToPlayModalProps) {
   function handleClose() {
+    trackHowToPlayDismissed();
     dismissHowToPlay();
     onClose();
   }

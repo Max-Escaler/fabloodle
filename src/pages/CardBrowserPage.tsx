@@ -8,6 +8,12 @@ import { getTodayString } from "../utils/dateUtils";
 import { Header } from "../components/Header";
 import { CardAvatar } from "../components/CardAvatar";
 import { CardDetailModal } from "../components/CardDetailModal";
+import {
+  trackBrowseCardsOpened,
+  trackBrowseFilterApplied,
+  trackBrowseCardViewed,
+  trackBrowseFiltersReset,
+} from "../utils/analytics";
 
 const PITCH_COLORS: Record<number, string> = { 1: "#e74c3c", 2: "#f1c40f", 3: "#3498db" };
 const PITCH_NAMES: Record<number, string> = { 1: "Red", 2: "Yellow", 3: "Blue" };
@@ -84,6 +90,49 @@ function parseCost(display: string): number | null {
   return isNaN(n) ? null : n;
 }
 
+function isNumericFilterActive(f: NumericFilter): boolean {
+  return f.value !== null;
+}
+
+function describeFilters(f: Filters) {
+  const usedType = f.type !== null;
+  const usedSubtype = f.subtype !== null;
+  const usedClass = f.class !== null;
+  const usedTalent = f.talent !== null;
+  const usedSet = f.set !== null;
+  const usedPitch = f.pitch.length > 0;
+  const usedKeyword = f.keywords.length > 0;
+  const usedCost = isNumericFilterActive(f.cost);
+  const usedAttack = isNumericFilterActive(f.attack);
+  const usedDefense = isNumericFilterActive(f.defense);
+  const activeFilterCount = [
+    usedType,
+    usedSubtype,
+    usedClass,
+    usedTalent,
+    usedSet,
+    usedPitch,
+    usedKeyword,
+    usedCost,
+    usedAttack,
+    usedDefense,
+  ].filter(Boolean).length;
+  return {
+    usedType,
+    usedSubtype,
+    usedClass,
+    usedTalent,
+    usedSet,
+    usedPitch,
+    usedKeyword,
+    usedCost,
+    usedAttack,
+    usedDefense,
+    keywordCount: f.keywords.length,
+    activeFilterCount,
+  };
+}
+
 function cmp(actual: number | null, filter: NumericFilter): boolean {
   if (filter.value === null) return true;
   if (actual === null) return false;
@@ -102,6 +151,19 @@ export function CardBrowserPage() {
 
   const [filters, setFilters] = useState<Filters>(() => loadStoredFilters());
   const [selected, setSelected] = useState<FabCard | null>(null);
+
+  const openedFiredRef = useRef(false);
+  useEffect(() => {
+    if (openedFiredRef.current) return;
+    openedFiredRef.current = true;
+    const desc = describeFilters(filters);
+    trackBrowseCardsOpened({
+      returnTo,
+      hadPersistedFilters: desc.activeFilterCount > 0,
+    });
+    // Intentionally only fire once on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Persist filters across navigations within the same browser tab so the user
   // can hop back and forth between Browse Cards and the puzzle without losing
@@ -160,12 +222,46 @@ export function CardBrowserPage() {
   const truncated = results.length > RESULT_LIMIT;
   const visible = truncated ? results.slice(0, RESULT_LIMIT) : results;
 
+  // Debounce filter_applied events so we don't flood GA while the user is
+  // typing a numeric value or clicking through options. The latest values
+  // for results and filters are captured by the timer callback itself.
+  const firstFilterEffectRef = useRef(true);
+  useEffect(() => {
+    if (firstFilterEffectRef.current) {
+      firstFilterEffectRef.current = false;
+      return;
+    }
+    const desc = describeFilters(filters);
+    if (desc.activeFilterCount === 0) return;
+    const timer = window.setTimeout(() => {
+      trackBrowseFilterApplied({
+        resultCount: results.length,
+        ...desc,
+      });
+    }, 700);
+    return () => window.clearTimeout(timer);
+  }, [filters, results.length]);
+
   function toggleArrayValue<T>(arr: T[], value: T): T[] {
     return arr.includes(value) ? arr.filter((v) => v !== value) : [...arr, value];
   }
 
   function reset() {
+    const desc = describeFilters(filters);
+    trackBrowseFiltersReset({ activeFilterCountBefore: desc.activeFilterCount });
     setFilters(EMPTY_FILTERS);
+  }
+
+  function handleCardClick(card: FabCard) {
+    const index = visible.findIndex((c) => c.id === card.id);
+    trackBrowseCardViewed({
+      cardId: card.id,
+      cardName: card.name,
+      cardSet: getCardReleases(card).map(String).join(",") || "unknown",
+      resultPosition: index >= 0 ? index : -1,
+      resultCount: results.length,
+    });
+    setSelected(card);
   }
 
   return (
@@ -219,7 +315,7 @@ export function CardBrowserPage() {
               <button
                 key={card.id}
                 type="button"
-                onClick={() => setSelected(card)}
+                onClick={() => handleCardClick(card)}
                 className="flex flex-col items-center gap-2 p-2 rounded-lg bg-[#1a1a1b] border border-[#3a3a3c] hover:border-[#d4a843]/60 transition-colors text-left"
               >
                 <CardAvatar card={card} size={96} />

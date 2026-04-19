@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import type { FabCard } from "../data/cards";
 import { effectiveClass } from "../utils/gameLogic";
 import { getCardReleases } from "../utils/cardReleases";
+import { trackBrowseCardGuessed } from "../utils/analytics";
 
 const PITCH_COLORS: Record<number, string> = { 1: "#e74c3c", 2: "#f1c40f", 3: "#3498db" };
 const PITCH_NAMES: Record<number, string> = { 1: "Red", 2: "Yellow", 3: "Blue" };
@@ -57,7 +58,13 @@ export function CardDetailModal({ card, returnTo, onClose }: CardDetailModalProp
   const releases = getCardReleases(card).map(String);
 
   function handleGuess() {
-    navigate(returnTo ?? "/", { state: { guessCardId: card.id } });
+    const dest = returnTo ?? "/";
+    trackBrowseCardGuessed({
+      cardId: card.id,
+      cardName: card.name,
+      returnTo: dest,
+    });
+    navigate(dest, { state: { guessCardId: card.id } });
   }
 
   return (

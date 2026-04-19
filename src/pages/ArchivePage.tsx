@@ -1,10 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Header } from "../components/Header";
 import { getTodayString } from "../utils/dateUtils";
 import { isSupabaseConfigured } from "../lib/supabase";
 import { fetchPuzzleDatesInRange } from "../utils/puzzleService";
 import { loadArchiveSummary } from "../utils/archiveSummary";
+import {
+  trackArchiveOpened,
+  trackArchiveMonthChanged,
+  trackArchiveDateSelected,
+} from "../utils/analytics";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
 
@@ -31,6 +36,13 @@ export function ArchivePage() {
   const [viewMonth, setViewMonth] = useState(now.getMonth());
   const [puzzleDates, setPuzzleDates] = useState<Set<string>>(new Set());
   const [loadingMonth, setLoadingMonth] = useState(false);
+
+  const openedFiredRef = useRef(false);
+  useEffect(() => {
+    if (openedFiredRef.current) return;
+    openedFiredRef.current = true;
+    trackArchiveOpened();
+  }, []);
 
   const monthStart = toISODate(viewYear, viewMonth + 1, 1);
   const monthEnd = toISODate(viewYear, viewMonth + 1, new Date(viewYear, viewMonth + 1, 0).getDate());
@@ -68,21 +80,27 @@ export function ArchivePage() {
   const toPlayInMonth = publishedInMonth.length - wonInMonth;
 
   function goPrevMonth() {
-    if (viewMonth === 0) {
-      setViewYear((y) => y - 1);
-      setViewMonth(11);
-    } else {
-      setViewMonth((m) => m - 1);
-    }
+    const nextYear = viewMonth === 0 ? viewYear - 1 : viewYear;
+    const nextMonth = viewMonth === 0 ? 11 : viewMonth - 1;
+    setViewYear(nextYear);
+    setViewMonth(nextMonth);
+    trackArchiveMonthChanged({
+      direction: "prev",
+      viewYear: nextYear,
+      viewMonth: nextMonth + 1,
+    });
   }
 
   function goNextMonth() {
-    if (viewMonth === 11) {
-      setViewYear((y) => y + 1);
-      setViewMonth(0);
-    } else {
-      setViewMonth((m) => m + 1);
-    }
+    const nextYear = viewMonth === 11 ? viewYear + 1 : viewYear;
+    const nextMonth = viewMonth === 11 ? 0 : viewMonth + 1;
+    setViewYear(nextYear);
+    setViewMonth(nextMonth);
+    trackArchiveMonthChanged({
+      direction: "next",
+      viewYear: nextYear,
+      viewMonth: nextMonth + 1,
+    });
   }
 
   const monthName = new Date(viewYear, viewMonth, 1).toLocaleString("default", {
@@ -173,7 +191,17 @@ export function ArchivePage() {
                 );
 
                 return clickable ? (
-                  <Link key={dateStr} to={`/play/${dateStr}`} className="block">
+                  <Link
+                    key={dateStr}
+                    to={`/play/${dateStr}`}
+                    className="block"
+                    onClick={() =>
+                      trackArchiveDateSelected({
+                        playDate: dateStr,
+                        previouslyPlayed: Boolean(entry),
+                      })
+                    }
+                  >
                     {inner}
                   </Link>
                 ) : (

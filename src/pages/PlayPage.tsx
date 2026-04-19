@@ -28,7 +28,14 @@ import {
 } from "../utils/puzzleService";
 import type { GuessStats } from "../utils/puzzleService";
 import { isHowToPlayDismissed } from "../utils/howToPlayStorage";
-import { trackGuessSubmitted } from "../utils/analytics";
+import {
+  trackGuessSubmitted,
+  trackPuzzleStarted,
+  trackPuzzleWon,
+  trackHintUsed,
+  trackResultModalOpened,
+  trackHowToPlayOpened,
+} from "../utils/analytics";
 
 const PITCH_COLORS: Record<number, string> = { 1: "#e74c3c", 2: "#f1c40f", 3: "#3498db" };
 const PITCH_NAMES: Record<number, string> = { 1: "Red", 2: "Yellow", 3: "Blue" };
@@ -154,6 +161,19 @@ function PlayPageInner({ playDate }: { playDate: string }) {
   // navigate(). This ref de-dupes by guessCardId so we don't submit twice and
   // trigger a spurious "Already guessed!" toast.
   const processedGuessCardIdRef = useRef<string | null>(null);
+  // StrictMode-safe marker so we fire puzzle_started at most once per playDate.
+  const puzzleStartedFiredRef = useRef<string | null>(null);
+  // Prevents duplicate result_modal_opened events when the modal reopens.
+  const prevShowModalRef = useRef(false);
+  const manualModalOpenRef = useRef(false);
+  const howToPlayOpenedFiredRef = useRef(false);
+
+  useEffect(() => {
+    if (showHowToPlay && !howToPlayOpenedFiredRef.current) {
+      howToPlayOpenedFiredRef.current = true;
+      trackHowToPlayOpened({ autoOpened: true });
+    }
+  }, [showHowToPlay]);
 
   useEffect(() => {
     if (gameState !== "won" || !isSupabaseConfigured()) return;
@@ -192,6 +212,15 @@ function PlayPageInner({ playDate }: { playDate: string }) {
         setGuesses(reconstructGuesses(savedProgress, card, CARDS));
       }
       setPuzzleLoading(false);
+      if (puzzleStartedFiredRef.current !== playDate) {
+        puzzleStartedFiredRef.current = playDate;
+        trackPuzzleStarted({
+          playDate,
+          isArchive: isArchiveGame,
+          resumed: savedProgress.cardIds.length > 0,
+          initialGuessCount: savedProgress.cardIds.length,
+        });
+      }
     })();
 
     return () => {
@@ -233,6 +262,17 @@ function PlayPageInner({ playDate }: { playDate: string }) {
         setStats(updated);
         setGlobalStats(null);
 
+        const hintCount = newGuesses.reduce(
+          (sum, g) => sum + (g.hintedKeys?.length ?? 0),
+          0
+        );
+        trackPuzzleWon({
+          playDate,
+          isArchive: isArchiveGame,
+          guessCount: newGuesses.length,
+          hintCount,
+        });
+
         if (isSupabaseConfigured() && !completionSentRef.current) {
           completionSentRef.current = true;
           void (async () => {
@@ -254,7 +294,7 @@ function PlayPageInner({ playDate }: { playDate: string }) {
         }
       }
     },
-    [answerCard, gameState, guesses, guessedIds, playDate]
+    [answerCard, gameState, guesses, guessedIds, playDate, isArchiveGame]
   );
 
   const canUseHint =
@@ -313,14 +353,34 @@ function PlayPageInner({ playDate }: { playDate: string }) {
         break;
     }
     setHintPopup({ label: CATEGORY_LABELS[key], value: hintValue });
+    trackHintUsed({
+      playDate,
+      guessNumber: guesses.length,
+      hintCategory: key,
+    });
   }, [answerCard, gameState, guesses, playDate]);
 
   const openResultsModal = useCallback(() => {
+    manualModalOpenRef.current = true;
     setShowModal(true);
     if (gameState === "won" && globalStats === null && isSupabaseConfigured()) {
       void fetchGuessStats(playDate).then(setGlobalStats);
     }
   }, [gameState, globalStats, playDate]);
+
+  useEffect(() => {
+    if (showModal && !prevShowModalRef.current) {
+      const trigger: "auto" | "manual" = manualModalOpenRef.current ? "manual" : "auto";
+      manualModalOpenRef.current = false;
+      trackResultModalOpened({
+        won: gameState === "won",
+        playDate,
+        guessCount: guesses.length,
+        trigger,
+      });
+    }
+    prevShowModalRef.current = showModal;
+  }, [showModal, gameState, playDate, guesses.length]);
 
   // If the user came back from the Card Browser with a card to guess,
   // submit it once the puzzle is loaded, then clear the state so a refresh
