@@ -131,16 +131,16 @@ export function Header({ playDate, isArchiveGame = false }: HeaderProps) {
         </div>
       </div>
 
-      {/* sm+: three columns. Left column has the two nav buttons side by side. */}
-      <div className="hidden sm:flex items-center justify-between gap-3 lg:gap-6">
-        <div className="flex-shrink-0 min-w-0 flex items-center gap-2">
+      {/* sm+: three columns via grid so the brand is always centered regardless of side contents. */}
+      <div className="hidden sm:grid items-center gap-3 lg:gap-6 grid-cols-[1fr_auto_1fr]">
+        <div className="min-w-0 flex items-center gap-2 justify-self-start">
           <ArchiveLink from={location.pathname} />
           <BrowseLink returnTo={returnTo} onBrowserPage={onBrowserPage} from={location.pathname} />
         </div>
-        <div className="flex-1 flex justify-center min-w-0">
+        <div className="min-w-0 flex justify-center">
           <BrandBlock playDate={playDate} isArchiveGame={isArchiveGame} />
         </div>
-        <div className="flex-shrink-0 min-w-0 max-w-[min(11rem,32%)] flex justify-end">
+        <div className="min-w-0 max-w-[min(11rem,100%)] flex justify-end justify-self-end">
           <Credit className="text-[11px] text-[#6f7073] tracking-wide text-right leading-snug" />
         </div>
       </div>
