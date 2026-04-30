@@ -136,7 +136,7 @@ export function PlayPage() {
   return <PlayPageInner key={playDate} playDate={playDate} />;
 }
 
-function PlayPageInner({ playDate }: { playDate: string }) {
+export function PlayPageInner({ playDate }: { playDate: string }) {
   const location = useLocation();
   const navigate = useNavigate();
   const isArchiveGame = playDate !== getTodayString();
