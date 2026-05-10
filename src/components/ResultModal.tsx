@@ -93,7 +93,7 @@ export function ResultModal({
                   </p>
                 )}
                 <div className="flex flex-wrap items-center justify-center gap-1 mt-1">
-                  <span className="text-[#d4a843] text-xs">{answer.type}</span>
+                  <span className="text-[#d4a843] text-xs">{answer.type.join(" // ")}</span>
                   {answer.pitchValues.length > 0 && (
                     <div className="flex gap-0.5">
                       {answer.pitchValues.map((v) => (
@@ -161,7 +161,7 @@ export function ResultModal({
                 </p>
               )}
               <div className="flex items-center gap-2 mt-1">
-                <span className="text-[#d4a843] text-sm">{answer.type}</span>
+                <span className="text-[#d4a843] text-sm">{answer.type.join(" // ")}</span>
                 {answer.pitchValues.length > 0 && (
                   <div className="flex gap-1">
                     {answer.pitchValues.map((v) => (

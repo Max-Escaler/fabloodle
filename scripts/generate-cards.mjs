@@ -74,20 +74,32 @@ function getImageUrl(printings) {
   return `${IMG_BASE}${best.p.identifier}.webp`;
 }
 
-function getCardType(types) {
-  if (types.includes("Action")) return "Action";
-  if (types.includes("Defense Reaction")) return "Defense Reaction";
-  if (types.includes("Attack Reaction")) return "Attack Reaction";
-  if (types.includes("Instant")) return "Instant";
-  if (types.includes("Equipment")) return "Equipment";
-  if (types.includes("Weapon")) return "Weapon";
-  if (types.includes("Mentor")) return "Mentor";
-  if (types.includes("Block")) return "Block";
-  if (types.includes("Resource")) return "Resource";
-  if (types.includes("Macro")) return "Macro";
-  if (types.includes("Demi-Hero")) return "Demi-Hero";
-  if (types.includes("Companion")) return "Companion";
-  return types[0] ?? "Unknown";
+// Order to display the (sometimes-multiple) types of a card. Meld cards have
+// two types — front-face first, meld face second — and we want consistent
+// ordering across cards. The list mirrors the previous getCardType priority.
+const TYPE_ORDER = [
+  "Action",
+  "Defense Reaction",
+  "Attack Reaction",
+  "Instant",
+  "Equipment",
+  "Weapon",
+  "Mentor",
+  "Block",
+  "Resource",
+  "Macro",
+  "Demi-Hero",
+  "Companion",
+];
+
+function getCardTypes(types) {
+  if (!types || types.length === 0) return ["Unknown"];
+  const ranked = [...new Set(types)].sort((a, b) => {
+    const ai = TYPE_ORDER.indexOf(a);
+    const bi = TYPE_ORDER.indexOf(b);
+    return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+  });
+  return ranked;
 }
 
 // Subtypes to omit from the game hint (redundant or overly niche)
@@ -119,9 +131,9 @@ function getHeroClasses(classes) {
   return filtered.length > 0 ? filtered : ["Generic"];
 }
 
-function getTalent(talents) {
-  if (!talents || talents.length === 0) return "None";
-  return talents[0];
+function getTalents(talents) {
+  if (!talents || talents.length === 0) return ["None"];
+  return [...new Set(talents)].sort();
 }
 
 // Canonical display names for each main set
@@ -192,7 +204,7 @@ for (const [name, versions] of byName) {
 
   const pitchValues = [...new Set(versions.map((v) => v.pitch).filter((v) => v != null))].sort();
 
-  const type = getCardType(canonical.types ?? []);
+  const type = getCardTypes(canonical.types ?? []);
   const subtypes = getSubtypes(versions);
   const attack = canonical.power ?? null;
   const defense = canonical.defense ?? null;
@@ -206,7 +218,7 @@ for (const [name, versions] of byName) {
     costDisplay = "—";
   }
 
-  const talent = getTalent(canonical.talents);
+  const talent = getTalents(canonical.talents);
   const heroClass = getHeroClasses(canonical.classes ?? []);
   const rarity = getMainRarity(canonical.rarities ?? []);
   const imageUrl = getImageUrl(canonical.printings ?? []);
@@ -231,8 +243,8 @@ const lines = [
   `  id: string;`,
   `  name: string;`,
   `  imageUrl: string;`,
-  `  /** "Action" | "Defense Reaction" | "Attack Reaction" | "Instant" | "Equipment" | "Weapon" | "Mentor" | "Block" | "Resource" | "Macro" | "Demi-Hero" | "Companion" */`,
-  `  type: string;`,
+  `  /** Card types. Single-faced cards have one entry, e.g. ["Action"]. Meld cards (\`Front // Back\`) have one entry per face, e.g. ["Action","Instant"]. */`,
+  `  type: string[];`,
   `  /** Subtypes, e.g. ["Attack","Arrow"] | ["1H","Sword"] | ["Head"] | ["Aura"] */`,
   `  subtypes: string[];`,
   `  attack: number | null;`,
@@ -241,7 +253,8 @@ const lines = [
   `  costDisplay: string;`,
   `  /** Pitch values this card comes in: [] = colorless, [1]=red, [2]=yellow, [3]=blue */`,
   `  pitchValues: number[];`,
-  `  talent: string;`,
+  `  /** Talents on this card. Cards without a talent use ["None"]. Meld cards may include the talent of the meld face, e.g. ["Earth","Lightning"]. */`,
+  `  talent: string[];`,
   `  heroClass: string[];`,
   `  rarity: string;`,
   `  /** Keywords on this card, e.g. ["Go again", "Boost"] */`,
@@ -276,6 +289,9 @@ cards.slice(0, 5).forEach((c) =>
 
 // Type breakdown
 const typeCounts = {};
-cards.forEach((c) => { typeCounts[c.type] = (typeCounts[c.type] ?? 0) + 1; });
+cards.forEach((c) => {
+  const key = c.type.join(" // ");
+  typeCounts[key] = (typeCounts[key] ?? 0) + 1;
+});
 console.log("\nCard types:");
 Object.entries(typeCounts).sort((a,b) => b[1]-a[1]).forEach(([t,n]) => console.log(`  ${t}: ${n}`));

@@ -40,10 +40,11 @@ export type CategoryKey = keyof GuessResult["cells"];
  * Only truly classless + talentless cards say ["Generic"].
  */
 export function effectiveClass(card: FabCard): string[] {
+  const hasRealTalent = card.talent.some((t) => t !== "None");
   if (
     card.heroClass.length === 1 &&
     card.heroClass[0] === "Generic" &&
-    card.talent !== "None"
+    hasRealTalent
   )
     return ["None"];
   return card.heroClass;
@@ -107,14 +108,6 @@ function pitchCell(guessVals: number[], answerVals: number[]): CellResult {
   return { status: hasOverlap ? "close" : "wrong", direction: null, value: guessVals };
 }
 
-function exactCell(guessVal: string, answerVal: string): CellResult {
-  return {
-    status: guessVal === answerVal ? "correct" : "wrong",
-    direction: null,
-    value: guessVal,
-  };
-}
-
 function keywordsCell(guessVals: string[], answerVals: string[]): CellResult {
   const aSet = new Set(answerVals);
   const isExact =
@@ -132,13 +125,13 @@ export function evaluateGuess(guess: FabCard, answer: FabCard): GuessResult {
     card: guess,
     isExactMatch: guess.id === answer.id,
     cells: {
-      type: exactCell(guess.type, answer.type),
+      type: keywordsCell(guess.type, answer.type),
       subtypes: keywordsCell(guess.subtypes, answer.subtypes),
       attack: numericCell(guess.attack, answer.attack, 2),
       defense: numericCell(guess.defense, answer.defense, 1),
       cost: costCell(guess.costDisplay, answer.costDisplay),
       pitchValues: pitchCell(guess.pitchValues, answer.pitchValues),
-      talent: exactCell(guess.talent, answer.talent),
+      talent: keywordsCell(guess.talent, answer.talent),
       heroClass: keywordsCell(effectiveClass(guess), effectiveClass(answer)),
       keywords: keywordsCell(guess.keywords, answer.keywords),
       releases: keywordsCell(

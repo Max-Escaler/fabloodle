@@ -105,7 +105,9 @@ export function CardDetailModal({ card, returnTo, onClose }: CardDetailModalProp
         </div>
 
         <div className="px-5 pb-4 flex flex-col gap-2">
-          <StatRow label="Type">{card.type}</StatRow>
+          <StatRow label="Type">
+            <Chips values={card.type} />
+          </StatRow>
           {card.subtypes.length > 0 && (
             <StatRow label="Subtypes">
               <Chips values={card.subtypes} />
@@ -114,7 +116,9 @@ export function CardDetailModal({ card, returnTo, onClose }: CardDetailModalProp
           <StatRow label="Class">
             <Chips values={cls} />
           </StatRow>
-          <StatRow label="Talent">{card.talent}</StatRow>
+          <StatRow label="Talent">
+            <Chips values={card.talent} />
+          </StatRow>
           <StatRow label="Cost">{card.costDisplay}</StatRow>
           <StatRow label="Attack">{card.attack ?? "—"}</StatRow>
           <StatRow label="Defense">{card.defense ?? "—"}</StatRow>

@@ -184,8 +184,8 @@ export function CardBrowserPage() {
     const keywords = new Set<string>();
     const sets = new Set<string>();
     for (const c of CARDS) {
-      types.add(c.type);
-      talents.add(c.talent);
+      c.type.forEach((t) => types.add(t));
+      c.talent.forEach((t) => talents.add(t));
       c.subtypes.forEach((s) => subtypes.add(s));
       effectiveClass(c).forEach((cls) => {
         if (cls !== "None") classes.add(cls);
@@ -205,8 +205,8 @@ export function CardBrowserPage() {
 
   const results = useMemo(() => {
     return CARDS.filter((c) => {
-      if (filters.type && c.type !== filters.type) return false;
-      if (filters.talent && c.talent !== filters.talent) return false;
+      if (filters.type && !c.type.includes(filters.type)) return false;
+      if (filters.talent && !c.talent.includes(filters.talent)) return false;
       if (filters.subtype && !c.subtypes.includes(filters.subtype)) return false;
       if (filters.class && !effectiveClass(c).includes(filters.class)) return false;
       if (!filters.keywords.every((k) => c.keywords.includes(k))) return false;
@@ -324,11 +324,13 @@ export function CardBrowserPage() {
                     {card.name}
                   </div>
                   <div className="text-[#818384] text-[10px] mt-0.5 truncate">
-                    {card.type}
+                    {card.type.join(" // ")}
                     {effectiveClass(card).some((c) => c !== "Generic" && c !== "None")
                       ? ` · ${effectiveClass(card).filter((c) => c !== "Generic").join("/")}`
                       : ""}
-                    {card.talent !== "None" ? ` · ${card.talent}` : ""}
+                    {card.talent.some((t) => t !== "None")
+                      ? ` · ${card.talent.filter((t) => t !== "None").join("/")}`
+                      : ""}
                   </div>
                 </div>
               </button>

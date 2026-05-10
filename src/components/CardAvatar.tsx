@@ -24,7 +24,7 @@ interface CardAvatarProps {
 export function CardAvatar({ card, size, className = "" }: CardAvatarProps) {
   const [imgError, setImgError] = useState(false);
   const initial = card.name.charAt(0).toUpperCase();
-  const bgColor = TYPE_COLORS[card.type] ?? "#3a3a3c";
+  const bgColor = TYPE_COLORS[card.type[0]] ?? "#3a3a3c";
   // FaB cards are portrait: ~63×88mm → height ≈ width × 1.4
   const imgHeight = Math.round(size * 1.4);
 

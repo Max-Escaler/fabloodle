@@ -119,9 +119,9 @@ export function CardSearch({ cards, guessedIds, onSelect, disabled }: CardSearch
                 <span className="font-semibold text-sm leading-tight block truncate">{card.name}</span>
                 <div className="flex items-center gap-2 mt-0.5">
                   <span className="text-[#818384] text-xs truncate">
-                    {card.type}
+                    {card.type.join(" // ")}
                     {card.heroClass.some((c) => c !== "Generic") ? ` · ${card.heroClass.filter((c) => c !== "Generic").join("/")}` : ""}
-                    {card.talent !== "None" ? ` · ${card.talent}` : ""}
+                    {card.talent.some((t) => t !== "None") ? ` · ${card.talent.filter((t) => t !== "None").join("/")}` : ""}
                   </span>
                   {card.pitchValues.length > 0 && (
                     <div className="flex gap-0.5 shrink-0">

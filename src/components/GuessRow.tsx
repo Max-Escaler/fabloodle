@@ -4,7 +4,14 @@ import { DISPLAY_GRID_CATEGORY_KEYS } from "../utils/gameLogic";
 import { CardAvatar } from "./CardAvatar";
 
 const NUMERIC_KEYS = new Set(["attack", "defense", "cost"]);
-const TAG_KEYS = new Set(["keywords", "subtypes", "releases", "heroClass"]);
+const TAG_KEYS = new Set([
+  "type",
+  "talent",
+  "keywords",
+  "subtypes",
+  "releases",
+  "heroClass",
+]);
 
 const DISPLAY_SHORT: Record<string, string> = {
   "Defense Reaction": "Def React",
@@ -80,7 +87,7 @@ function KeywordTags({ values, small }: { values: string[]; small?: boolean }) {
             small ? "text-[8px]" : "text-[9px]"
           }`}
         >
-          {kw}
+          {DISPLAY_SHORT[kw] ?? kw}
         </span>
       ))}
     </div>
@@ -166,7 +173,7 @@ export function GuessRow({ result, rowIndex, isSameStats = false }: GuessRowProp
               {result.card.name}
             </span>
             <span className="text-[#818384] text-xs truncate block mt-0.5">
-              {result.card.type}
+              {result.card.type.join(" // ")}
             </span>
           </div>
           {isSameStats && (
@@ -204,7 +211,7 @@ export function GuessRow({ result, rowIndex, isSameStats = false }: GuessRowProp
               {result.card.name}
             </span>
             <span className="text-[#818384] text-xs truncate block mt-0.5">
-              {result.card.type}
+              {result.card.type.join(" // ")}
             </span>
             {isSameStats && (
               <span className="inline-block mt-1 text-[#d4a843] text-[10px] font-bold uppercase tracking-wide border border-[#d4a843] rounded px-1.5 py-0.5 leading-none">
