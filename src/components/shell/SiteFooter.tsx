@@ -18,7 +18,7 @@ export function SiteFooter() {
             Join our Discord
           </a>
           <p className="text-xs text-muted">
-            Part of the FABTools family with{" "}
+            Part of the FABTools family:{" "}
             <a
               href={fabToolsHref("footer")}
               target="_blank"
@@ -27,8 +27,8 @@ export function SiteFooter() {
             >
               FAB Tools
               <ExternalIcon size={12} />
-            </a>{" "}
-            and{" "}
+            </a>
+            <span aria-hidden="true" className="mx-1.5 text-faint">·</span>
             <a
               href={fabTradesHref("footer")}
               target="_blank"
@@ -38,7 +38,6 @@ export function SiteFooter() {
               FAB Trades
               <ExternalIcon size={12} />
             </a>
-            .
           </p>
         </div>
         <p className="text-xs text-faint">
