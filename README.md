@@ -1,3 +1,18 @@
+# Fabloodle
+
+## Card data
+
+Card data in `src/data/` is generated from the [`@flesh-and-blood/cards`](https://www.npmjs.com/package/@flesh-and-blood/cards) package:
+
+```sh
+npm install @flesh-and-blood/cards@latest @flesh-and-blood/types@latest
+npm run build:data
+```
+
+Cards only show up once a product they're printed in has released (`FAB_RELEASED_BEFORE=YYYY-MM-DD` overrides the date). Card ids are stored in Supabase, so the generator refuses to drop an existing id; pin renamed cards in `ID_OVERRIDES` in `scripts/generate-cards.mjs`. A weekly GitHub Action (`.github/workflows/refresh-cards.yml`) opens a PR when the package has new cards.
+
+Daily puzzles live in the Supabase `daily_puzzles` table. Once a new card list is deployed, `node scripts/schedule-puzzles.mjs` regenerates the schedule from tomorrow onward without repeating past answers (see the script header for options).
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.

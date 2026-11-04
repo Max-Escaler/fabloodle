@@ -3,71 +3,65 @@
  * Groups cards by name (deduplicates across pitch versions), collects all pitch
  * values, and picks the canonical (lowest-pitch) version for stats.
  *
- * Run: node scripts/generate-cards.mjs
+ * Debut set, image choice and release filtering all come from the package's
+ * release metadata, so new sets are picked up just by bumping the package.
+ *
+ * Run: npm run build:data (or node scripts/generate-cards.mjs)
  */
 
-import { cards as fabCards } from "@flesh-and-blood/cards";
-import { writeFileSync, mkdirSync } from "fs";
+import { cards as fabCards, releases } from "@flesh-and-blood/cards";
+import { writeFileSync, mkdirSync, readFileSync, existsSync } from "fs";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-// ── Set code → release year (for image URL construction) ─────────────────────
-const SET_YEARS = {
-  WTR: 2019, ARC: 2020, CRU: 2020,
-  MON: 2021, ELE: 2021,
-  EVR: 2022, UPR: 2022, DYN: 2022,
-  OUT: 2023, EVO: 2023, DTD: 2023,
-  MST: 2024, ROS: 2024, HVY: 2024,
-  SEA: 2025, HNT: 2025, GEM: 2025, OMN: 2025,
-  IRA: 2020, BVO: 2020, BEN: 2020, AZL: 2020,
-  KSI: 2020, KYO: 2020, AKO: 2020, KAT: 2020,
-  KSU: 2020, TEA: 2020, RNR: 2020, RHI: 2020, ASR: 2020,
-  DRO: 2021, BOL: 2021, CHN: 2021, PSM: 2021,
-  LXI: 2021, BRI: 2021, OLD: 2021, LEV: 2021,
-  MPG: 2021, ASB: 2021, "1HP": 2021,
-  FAI: 2022, ZEN: 2022, NUU: 2022, ENG: 2022,
-  WOD: 2022, ARK: 2022, ARA: 2022, AAZ: 2022,
-  ARR: 2022, RIP: 2022, VIC: 2022,
-  AAC: 2023, UZU: 2023, FLR: 2023, CIN: 2023,
-  AIO: 2023, AMX: 2023, KMX: 2023,
-  OSC: 2024, OLA: 2024, VER: 2024, AST: 2024,
-  AUA: 2024, AUR: 2024, AHA: 2024, AJV: 2024, DVR: 2024,
-  APS: 2025, FNG: 2025, SMP: 2025, SUP: 2025,
-  AGV: 2025, DNI: 2025, ZBD: 2025,
-  HER: 2019, JDG: 2023, LSS: 2022, TCC: 2023, TER: 2025, SBZ: 2025,
-};
+// ── Release metadata (from the package, so new sets need no code changes) ────
 
-const MAIN_SETS = new Set([
-  "WTR", "ARC", "CRU", "MON", "ELE", "EVR", "UPR", "DYN",
-  "OUT", "EVO", "DTD", "MST", "ROS", "HVY", "SEA", "HNT", "GEM", "OMN",
-]);
+const releaseByName = new Map(releases.map((r) => [String(r.release), r]));
+const BOOSTER_TYPES = new Set(["Standalone Booster", "Expansion Booster"]);
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+function releaseTime(name) {
+  const date = releaseByName.get(String(name))?.releaseDate;
+  return date ? Date.parse(date.replace(" ", "T") + "Z") : null;
+}
 
-function setCodeFromId(identifier) {
-  return identifier.match(/^([A-Z0-9]+?)\d/)?.[1] ?? null;
+function isBooster(name) {
+  return BOOSTER_TYPES.has(releaseByName.get(String(name))?.releaseType);
+}
+
+// Cards are only included once at least one product they're printed in is out.
+// Undated products (mostly promos) count as released. Override "today" with
+// FAB_RELEASED_BEFORE=YYYY-MM-DD when regenerating ahead of a release.
+const CUTOFF = process.env.FAB_RELEASED_BEFORE
+  ? Date.parse(process.env.FAB_RELEASED_BEFORE + "T23:59:59Z")
+  : Date.now();
+
+function isReleased(card) {
+  const names = new Set([...(card.sets ?? []), ...(card.printings ?? []).map((p) => p.set)]);
+  for (const n of names) {
+    const t = releaseTime(n);
+    if (t == null || t <= CUTOFF) return true;
+  }
+  return false;
 }
 
 const IMG_BASE = "https://legendstory-production-s3-public.s3.amazonaws.com/media/cards/large/";
 
+// Prefer the earliest booster printing without a special treatment.
 function getImageUrl(printings) {
-  const scored = printings.map((p) => {
-    const code = setCodeFromId(p.identifier);
-    const year = code ? (SET_YEARS[code] ?? 9999) : 9999;
-    return {
-      p, code, year,
-      isMain: code ? MAIN_SETS.has(code) : false,
-      hasTreatment: !!p.treatment,
-      isExpansion: !!p.isExpansionSlot,
-    };
-  });
+  const scored = printings.map((p) => ({
+    p,
+    time: releaseTime(p.set) ?? Infinity,
+    isMain: isBooster(p.set),
+    hasTreatment: !!p.treatment,
+    isExpansion: !!p.isExpansionSlot,
+  }));
   scored.sort((a, b) => {
     if (a.isMain !== b.isMain) return a.isMain ? -1 : 1;
     if (a.hasTreatment !== b.hasTreatment) return a.hasTreatment ? 1 : -1;
     if (a.isExpansion !== b.isExpansion) return a.isExpansion ? 1 : -1;
-    return a.year - b.year;
+    return a.time - b.time;
   });
   const best = scored[0];
   if (!best) return "";
@@ -136,39 +130,23 @@ function getTalents(talents) {
   return [...new Set(talents)].sort();
 }
 
-// Canonical display names for each main set
-const MAIN_SET_NAMES = {
-  WTR: "Welcome to Rathe",
-  ARC: "Arcane Rising",
-  CRU: "Crucible of War",
-  MON: "Monarch",
-  ELE: "Tales of Aria",
-  EVR: "Everfest",
-  UPR: "Uprising",
-  DYN: "Dynasty",
-  OUT: "Outsiders",
-  EVO: "Bright Lights",
-  DTD: "Dusk till Dawn",
-  MST: "Part the Mistveil",
-  ROS: "Rosetta",
-  HVY: "Heavy Hitters",
-  SEA: "High Seas",
-  HNT: "The Hunted",
-  GEM: "Gemstone",
-  OMN: "Omens of the Third Age",
-};
-
-function getFirstMainSet(setIdentifiers) {
-  if (!setIdentifiers || setIdentifiers.length === 0) return "Unknown";
-  for (const id of setIdentifiers) {
-    const code = setCodeFromId(id);
-    if (code && MAIN_SETS.has(code)) {
-      return MAIN_SET_NAMES[code] ?? code;
-    }
+/**
+ * The set a card debuted in: the earliest booster set it's printed in, else the
+ * earliest released product of any kind (deck, promo, etc.).
+ */
+function getDebutSet(versions) {
+  const names = new Set();
+  for (const v of versions) {
+    for (const n of v.sets ?? []) names.add(String(n));
+    for (const p of v.printings ?? []) if (p.set != null) names.add(String(p.set));
   }
-  // Fallback: derive code from first identifier
-  const code = setCodeFromId(setIdentifiers[0]);
-  return MAIN_SET_NAMES[code] ?? code ?? "Unknown";
+  const ranked = [...names]
+    .filter((n) => { const t = releaseTime(n); return t == null || t <= CUTOFF; })
+    .sort((a, b) => {
+      if (isBooster(a) !== isBooster(b)) return isBooster(a) ? -1 : 1;
+      return (releaseTime(a) ?? Infinity) - (releaseTime(b) ?? Infinity);
+    });
+  return ranked[0] ?? "Unknown";
 }
 
 function toId(name) {
@@ -179,6 +157,7 @@ function toId(name) {
 
 const playable = fabCards.filter(
   (c) =>
+    isReleased(c) &&
     !c.types.includes("Hero") &&
     !c.types.includes("Token") &&
     !c.types.includes("Equipment") &&
@@ -193,6 +172,12 @@ for (const c of playable) {
 }
 
 console.log(`Unique card names (non-hero, non-token): ${byName.size}`);
+
+// Card ids are stored in Supabase daily_puzzles, so they must never change.
+// When the package renames a card, pin the new name to the old id here.
+const ID_OVERRIDES = {
+  "Tremor of i'Arathael": "tremor-of-arathael",
+};
 
 const cards = [];
 const idSet = new Set();
@@ -223,9 +208,9 @@ for (const [name, versions] of byName) {
   const rarity = getMainRarity(canonical.rarities ?? []);
   const imageUrl = getImageUrl(canonical.printings ?? []);
   const keywords = [...new Set(versions.flatMap((v) => v.keywords ?? []))].sort();
-  const set = getFirstMainSet(canonical.setIdentifiers ?? []);
+  const set = getDebutSet(versions);
 
-  let id = toId(name);
+  let id = ID_OVERRIDES[name] ?? toId(name);
   let counter = 1;
   while (idSet.has(id)) { id = `${toId(name)}-${++counter}`; }
   idSet.add(id);
@@ -276,6 +261,20 @@ lines.push(`];`);
 lines.push(``);
 
 const outPath = join(__dirname, "..", "src", "data", "cards.ts");
+
+// Guard against dropping ids that past or scheduled puzzles may point at.
+if (existsSync(outPath)) {
+  const prevIds = new Set([...readFileSync(outPath, "utf8").matchAll(/^\s*\{id:"([^"]+)"/gm)].map((m) => m[1]));
+  const removed = [...prevIds].filter((id) => !idSet.has(id));
+  if (removed.length) {
+    console.error(`\n${removed.length} existing card id(s) would disappear:\n  ${removed.join("\n  ")}`);
+    console.error("Add them to ID_OVERRIDES (renamed cards) or rerun with ALLOW_REMOVED_IDS=1.");
+    if (!process.env.ALLOW_REMOVED_IDS) process.exit(1);
+  }
+  const added = [...idSet].filter((id) => !prevIds.has(id));
+  console.log(`New cards since last run: ${added.length}`);
+}
+
 mkdirSync(dirname(outPath), { recursive: true });
 writeFileSync(outPath, lines.join("\n"), "utf8");
 

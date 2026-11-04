@@ -8,11 +8,12 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "build:card-sets": "node scripts/build-sets-by-name.mjs",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build:data": "node scripts/generate-cards.mjs && node scripts/build-sets-by-name.mjs"
   },
   "dependencies": {
-    "@flesh-and-blood/cards": "^3.6.229",
-    "@flesh-and-blood/types": "^3.6.229",
+    "@flesh-and-blood/cards": "^7.3.10",
+    "@flesh-and-blood/types": "^7.3.10",
     "@supabase/supabase-js": "^2.100.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

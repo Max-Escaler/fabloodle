@@ -5,10 +5,20 @@
 import { writeFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
-import { cards } from "@flesh-and-blood/cards";
+import { cards, releases } from "@flesh-and-blood/cards";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, "..");
+
+// Skip products that aren't out yet (see generate-cards.mjs for the same rule).
+const CUTOFF = process.env.FAB_RELEASED_BEFORE
+  ? Date.parse(process.env.FAB_RELEASED_BEFORE + "T23:59:59Z")
+  : Date.now();
+const releaseDate = new Map(releases.map((r) => [String(r.release), r.releaseDate]));
+function isOut(name) {
+  const d = releaseDate.get(name);
+  return !d || Date.parse(d.replace(" ", "T") + "Z") <= CUTOFF;
+}
 
 const nameToSets = new Map();
 
@@ -18,6 +28,7 @@ for (const card of cards) {
   for (const p of card.printings ?? []) {
     if (p.set != null) names.add(String(p.set));
   }
+  for (const n of names) if (!isOut(n)) names.delete(n);
   if (names.size === 0) continue;
   const key = card.name;
   if (!nameToSets.has(key)) nameToSets.set(key, new Set());
