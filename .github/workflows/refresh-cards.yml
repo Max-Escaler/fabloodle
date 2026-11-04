@@ -1,0 +1,40 @@
+name: Refresh card list
+
+# Keeps src/data in step with @flesh-and-blood/cards. Cards are only included
+# once a product they're printed in has released, so a weekly run also picks up
+# sets that were already in the package but not out yet.
+on:
+  schedule:
+    - cron: "0 9 * * 1" # Mondays 09:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Update card packages
+        run: npm install @flesh-and-blood/cards@latest @flesh-and-blood/types@latest
+      - name: Regenerate card data
+        run: npm run build:data
+      - name: Type-check and build
+        run: npm run build
+      - uses: peter-evans/create-pull-request@v7
+        with:
+          branch: automation/refresh-cards
+          commit-message: Refresh card list from @flesh-and-blood/cards
+          title: Refresh card list
+          body: |
+            Automated weekly refresh of `src/data/cards.ts` and `src/data/setsByCardName.ts` from the latest `@flesh-and-blood/cards`.
+
+            After this deploys, new cards can be scheduled as daily puzzles with `node scripts/schedule-puzzles.mjs` (see the script header).
+          delete-branch: true
