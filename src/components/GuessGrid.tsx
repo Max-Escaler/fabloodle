@@ -1,7 +1,7 @@
 import type { GuessResult } from "../utils/gameLogic";
 import { isSameStatsWrongCard } from "../utils/gameLogic";
 import { GuessRow } from "./GuessRow";
-import { CategoryHeader, CompactCategoryHeader } from "./CategoryHeader";
+import { CategoryHeader } from "./CategoryHeader";
 
 interface GuessGridProps {
   guesses: GuessResult[];
@@ -11,8 +11,7 @@ export function GuessGrid({ guesses }: GuessGridProps) {
   return (
     <div className="flex flex-col gap-1.5 w-full pb-2">
       <CategoryHeader />
-      <CompactCategoryHeader />
-      <div className="flex flex-col gap-1 lg:gap-1.5 w-full">
+      <div className="flex flex-col gap-2 lg:gap-1.5 w-full">
         {[...guesses].reverse().map((g, i) => (
           <GuessRow
             key={g.card.id}

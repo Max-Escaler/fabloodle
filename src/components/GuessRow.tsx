@@ -1,9 +1,9 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import type { GuessResult, CellResult } from "../utils/gameLogic";
 import { DISPLAY_GRID_CATEGORY_KEYS } from "../utils/gameLogic";
 import { CardAvatar } from "./CardAvatar";
 import { PitchDots } from "./ui/Pitch";
-import { BOARD_COLUMNS, BOARD_MIN_WIDTH, COMPACT_COLUMNS } from "./CategoryHeader";
+import { BOARD_COLUMNS, BOARD_MIN_WIDTH } from "./CategoryHeader";
 
 const NUMERIC_KEYS = new Set(["attack", "defense", "cost"]);
 const TAG_KEYS = new Set([
@@ -34,47 +34,6 @@ const CELL_LABELS: Record<string, string> = {
   keywords:    "Keywords",
   releases:    "Sets",
 };
-
-// Phone board: ten columns in ~31px each, so tag values are abbreviated.
-// The full values are a tap away (the row expands) and in each tile's tooltip.
-const ABBREV: Record<string, string> = {
-  Action: "Act",
-  Instant: "Inst",
-  "Defense Reaction": "DR",
-  "Attack Reaction": "AR",
-  Equipment: "Eqp",
-  Weapon: "Wpn",
-  Resource: "Res",
-  Mentor: "Mntr",
-  Companion: "Comp",
-  "Demi-Hero": "Demi",
-  Token: "Tkn",
-  Block: "Blk",
-  Generic: "Gen",
-  "Non-Attack": "NA",
-  Attack: "Atk",
-  Mechanologist: "Mech",
-  Illusionist: "Illu",
-  Runeblade: "Rune",
-  Guardian: "Guar",
-  Brute: "Brut",
-  Ranger: "Rang",
-  Warrior: "War",
-  Wizard: "Wiz",
-  Assassin: "Assn",
-};
-
-function abbreviate(value: string): string {
-  if (ABBREV[value]) return ABBREV[value];
-  const words = value.split(/[\s-]+/).filter(Boolean);
-  if (words.length > 1) {
-    return words
-      .map((w) => (/^\d+$/.test(w) ? w : w[0].toUpperCase()))
-      .join("")
-      .slice(0, 4);
-  }
-  return value.slice(0, 4);
-}
 
 interface CellProps {
   cellKey: string;
@@ -132,11 +91,23 @@ function KeywordTags({ values, small }: { values: string[]; small?: boolean }) {
 }
 
 function Cell({ cellKey, result, delay, showLabel = false }: CellProps) {
-  const revealed = useRevealed(delay);
+  const [revealed, setRevealed] = useState(false);
   const showArrow = NUMERIC_KEYS.has(cellKey) && result.status !== "correct";
   const isPitch = cellKey === "pitchValues";
   const isTags = TAG_KEYS.has(cellKey);
-  const tone = toneFor(result, revealed);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setRevealed(true), delay);
+    return () => clearTimeout(timer);
+  }, [delay]);
+
+  const tone = revealed
+    ? result.status === "correct"
+      ? "bg-hit text-on-hit"
+      : result.status === "close"
+      ? "bg-near text-on-near"
+      : "bg-miss text-on-miss"
+    : "bg-sunken text-faint ring-1 ring-inset ring-line";
 
   return (
     <div
@@ -177,98 +148,6 @@ function Cell({ cellKey, result, delay, showLabel = false }: CellProps) {
   );
 }
 
-function useRevealed(delay: number) {
-  const [revealed, setRevealed] = useState(false);
-  useEffect(() => {
-    const timer = setTimeout(() => setRevealed(true), delay);
-    return () => clearTimeout(timer);
-  }, [delay]);
-  return revealed;
-}
-
-function toneFor(result: CellResult, revealed: boolean) {
-  if (!revealed) return "bg-sunken text-faint ring-1 ring-inset ring-line";
-  return result.status === "correct"
-    ? "bg-hit text-on-hit"
-    : result.status === "close"
-      ? "bg-near text-on-near"
-      : "bg-miss text-on-miss";
-}
-
-/** One tile of the one-line board used below the desktop breakpoint. */
-function CompactCell({ cellKey, result, delay }: Omit<CellProps, "showLabel">) {
-  const revealed = useRevealed(delay);
-  const showArrow = NUMERIC_KEYS.has(cellKey) && result.status !== "correct";
-  const isPitch = cellKey === "pitchValues";
-  const isTags = TAG_KEYS.has(cellKey);
-  const tags = isTags ? (result.value as string[]) : [];
-  const full = isTags
-    ? tags.join(", ") || "None"
-    : isPitch
-      ? undefined
-      : String(result.value);
-
-  const arrow =
-    showArrow && result.direction ? (result.direction === "higher" ? "▲" : "▼") : null;
-
-  let content: ReactNode = null;
-  let more = 0;
-  if (revealed) {
-    if (isPitch) {
-      const values = result.value as number[];
-      content =
-        values.length === 0 ? (
-          <span className="opacity-60">—</span>
-        ) : (
-          <PitchDots
-            values={values}
-            dotClass="w-[7px] h-[7px] min-[375px]:w-2 min-[375px]:h-2 sm:w-2.5 sm:h-2.5"
-            gap="gap-px min-[375px]:gap-[2px]"
-          />
-        );
-    } else if (isTags) {
-      if (tags.length === 0) {
-        content = <span className="opacity-60">—</span>;
-      } else {
-        more = tags.length - 1;
-        content = (
-          <>
-            <span className="sm:hidden">{abbreviate(tags[0])}</span>
-            <span className="hidden sm:block max-w-full truncate px-0.5">
-              {DISPLAY_SHORT[tags[0]] ?? tags[0]}
-            </span>
-          </>
-        );
-      }
-    } else {
-      content = (
-        <span className="tnum inline-flex items-baseline gap-px text-[14px] sm:text-[15px]">
-          {DISPLAY_SHORT[String(result.value)] ?? String(result.value)}
-          {arrow && <span className="text-[8px] sm:text-[9px] opacity-80">{arrow}</span>}
-        </span>
-      );
-    }
-  }
-
-  return (
-    <div
-      className={`relative min-w-0 h-9 sm:h-11 flex items-center justify-center rounded-[5px] text-[9px] min-[375px]:text-[10px] sm:text-[11px] font-bold leading-none text-center overflow-hidden ${toneFor(
-        result,
-        revealed
-      )} ${revealed ? "cell-flip" : ""}`}
-      style={{ animationDelay: `${delay}ms` }}
-      title={revealed ? full : undefined}
-    >
-      {content}
-      {more > 0 && (
-        <span className="absolute top-[2px] right-[3px] text-[7.5px] sm:text-[8px] font-semibold opacity-70">
-          +{more}
-        </span>
-      )}
-    </div>
-  );
-}
-
 interface GuessRowProps {
   result: GuessResult;
   rowIndex: number;
@@ -288,28 +167,32 @@ export function GuessRow({ result, rowIndex, isSameStats = false }: GuessRowProp
 
   return (
     <>
-      {/* Phones and tablets: name line over all ten categories on one row. */}
+      {/* Phones and tablets: card header, then the categories as a tile grid. */}
       <div
-        className={`lg:hidden rounded-md px-1.5 pt-1.5 pb-1.5 sm:px-2 ${
-          isSameStats ? "bg-accent-soft ring-1 ring-inset ring-accent/50" : "bg-surface ring-1 ring-inset ring-line"
+        className={`lg:hidden flex flex-col gap-2 p-2.5 rounded-lg bg-surface border shadow-sm ${
+          isSameStats ? "border-accent" : "border-line"
         }`}
       >
-        <div className="flex items-baseline gap-1.5 min-w-0 px-0.5 mb-1">
-          <span className="min-w-0 truncate text-[13px] font-semibold leading-tight">
-            {result.card.name}
-          </span>
-          <span className="shrink-0 text-[11px] text-muted leading-tight">
-            {result.card.type.join(" // ")}
-          </span>
-          {isSameStats && <span className="ml-auto self-center">{sameStatsBadge}</span>}
+        <div className="flex items-center gap-2.5">
+          <CardAvatar card={result.card} size={40} />
+          <div className="min-w-0 flex-1">
+            <span className="text-sm font-semibold leading-snug line-clamp-2 block">
+              {result.card.name}
+            </span>
+            <span className="text-muted text-xs truncate block mt-0.5">
+              {result.card.type.join(" // ")}
+            </span>
+          </div>
+          {isSameStats && sameStatsBadge}
         </div>
-        <div className="grid gap-[3px] sm:gap-1" style={{ gridTemplateColumns: COMPACT_COLUMNS }}>
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5">
           {DISPLAY_GRID_CATEGORY_KEYS.map((key, i) => (
-            <CompactCell
+            <Cell
               key={key}
               cellKey={key}
               result={result.cells[key]}
               delay={BASE_DELAY + i * CELL_STAGGER}
+              showLabel
             />
           ))}
         </div>
