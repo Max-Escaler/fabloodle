@@ -2,10 +2,11 @@ import type { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { trackNavLinkClicked } from "../../utils/analytics";
 import type { NavLink as NavLinkName } from "../../utils/analytics";
-import { CREATOR_URL, fabToolsHref, fabTradesHref } from "../../lib/links";
+import { DISCORD_INVITE_URL, fabToolsHref, fabTradesHref } from "../../lib/links";
 import {
   CalendarIcon,
   CardsIcon,
+  DiscordMark,
   ExternalIcon,
   PriceTagIcon,
   PuzzleIcon,
@@ -186,19 +187,17 @@ function Sidebar({ nav }: { nav: NavItem[] }) {
       <div className="flex-1" />
 
       <div className="px-3 pb-4 space-y-1">
+        <a
+          href={DISCORD_INVITE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={navLink(false)}
+        >
+          <DiscordMark size={19} className="text-[#7983F5]" />
+          Join the Discord
+        </a>
         <ThemeToggle withLabel />
-        <div className="border-t border-line mt-2 pt-3 px-1 space-y-1.5">
-          <p className="text-xs text-muted">
-            Made by{" "}
-            <a
-              href={CREATOR_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-semibold text-fg hover:text-accent-text"
-            >
-              MXBloom
-            </a>
-          </p>
+        <div className="border-t border-line mt-2 pt-3 px-1">
           <p className="text-[11px] text-faint leading-snug">
             Fan-made, not affiliated with Legend Story Studios.
           </p>
