@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import type { FabCard } from "../data/cards";
 import { CardAvatar } from "./CardAvatar";
+import { PitchDots } from "./ui/Pitch";
+import { SearchIcon } from "./ui/icons";
 
-const PITCH_COLORS: Record<number, string> = { 1: "#e74c3c", 2: "#f1c40f", 3: "#3498db" };
+
 
 interface CardSearchProps {
   cards: FabCard[];
@@ -61,7 +63,7 @@ export function CardSearch({ cards, guessedIds, onSelect, disabled }: CardSearch
   return (
     <div className="relative w-full">
       <div className="relative flex items-center">
-        <span className="absolute left-4 text-[#818384] pointer-events-none text-lg">🔍</span>
+        <SearchIcon size={20} className="absolute left-4 text-faint pointer-events-none" />
         <input
           ref={inputRef}
           type="text"
@@ -79,15 +81,16 @@ export function CardSearch({ cards, guessedIds, onSelect, disabled }: CardSearch
           onBlur={() => setTimeout(() => setOpen(false), 150)}
           onKeyDown={handleKeyDown}
           disabled={disabled}
-          placeholder={disabled ? "Congratulations! 🎉" : "Search for a card…"}
-          className="w-full pl-11 pr-5 py-4 rounded-xl bg-[#1a1a1b] border border-[#3a3a3c] text-white placeholder-[#818384] focus:outline-none focus:border-[#818384] text-base disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          placeholder={disabled ? "Solved! Come back tomorrow for a new card." : "Search for a card to guess…"}
+          aria-label="Search for a card to guess"
+          className="field w-full h-14 pl-12 pr-4 !text-base shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
         />
       </div>
 
       {open && filtered.length > 0 && (
         <ul
           ref={listRef}
-          className="absolute z-50 mt-1 w-full bg-[#1a1a1b] border border-[#3a3a3c] rounded-xl overflow-y-auto max-h-72 shadow-2xl"
+          className="absolute z-30 mt-1.5 w-full panel !shadow-lg overflow-y-auto max-h-80 p-1"
         >
           {filtered.map((card, i) => (
             <li
@@ -110,33 +113,23 @@ export function CardSearch({ cards, guessedIds, onSelect, disabled }: CardSearch
                 }
               }}
               onMouseEnter={() => setHighlighted(i)}
-              className={`px-4 py-3 cursor-pointer flex items-center gap-3 transition-colors ${
-                i === highlighted ? "bg-[#3a3a3c] text-white" : "text-[#d7d7d7] hover:bg-[#2a2a2b]"
+              className={`px-2.5 py-2 rounded-md cursor-pointer flex items-center gap-3 transition-colors ${
+                i === highlighted ? "bg-accent-soft text-fg" : "text-fg"
               }`}
             >
-              <CardAvatar card={card} size={40} />
+              <CardAvatar card={card} size={34} />
               <div className="flex-1 min-w-0">
                 <span className="font-semibold text-sm leading-tight block truncate">{card.name}</span>
                 <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-[#818384] text-xs truncate">
+                  <span className="text-muted text-xs truncate">
                     {card.type.join(" // ")}
                     {card.heroClass.some((c) => c !== "Generic") ? ` · ${card.heroClass.filter((c) => c !== "Generic").join("/")}` : ""}
                     {card.talent.some((t) => t !== "None") ? ` · ${card.talent.filter((t) => t !== "None").join("/")}` : ""}
                   </span>
-                  {card.pitchValues.length > 0 && (
-                    <div className="flex gap-0.5 shrink-0">
-                      {card.pitchValues.map((v) => (
-                        <span
-                          key={v}
-                          className="w-2.5 h-2.5 rounded-full inline-block"
-                          style={{ backgroundColor: PITCH_COLORS[v] ?? "#818384" }}
-                        />
-                      ))}
-                    </div>
-                  )}
+                  <PitchDots values={card.pitchValues} dotClass="w-2.5 h-2.5" gap="gap-0.5" />
                 </div>
               </div>
-              <span className="text-[#818384] text-xs shrink-0">{card.rarity}</span>
+              <span className="text-faint text-xs shrink-0">{card.rarity}</span>
             </li>
           ))}
         </ul>

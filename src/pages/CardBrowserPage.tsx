@@ -1,13 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { CARDS } from "../data/cards";
 import type { FabCard } from "../data/cards";
 import { effectiveClass } from "../utils/gameLogic";
 import { getCardReleases } from "../utils/cardReleases";
-import { getTodayString } from "../utils/dateUtils";
-import { Header } from "../components/Header";
 import { CardAvatar } from "../components/CardAvatar";
 import { CardDetailModal } from "../components/CardDetailModal";
+import { Page, PageHeader } from "../components/ui/Page";
+import { PitchDot } from "../components/ui/Pitch";
+import { PITCH_NAMES } from "../utils/pitch";
+import { ArrowLeftIcon, CloseIcon } from "../components/ui/icons";
+import { SiteFooter } from "../components/shell/SiteFooter";
 import {
   trackBrowseCardsOpened,
   trackBrowseFilterApplied,
@@ -15,8 +18,6 @@ import {
   trackBrowseFiltersReset,
 } from "../utils/analytics";
 
-const PITCH_COLORS: Record<number, string> = { 1: "#e74c3c", 2: "#f1c40f", 3: "#3498db" };
-const PITCH_NAMES: Record<number, string> = { 1: "Red", 2: "Yellow", 3: "Blue" };
 
 const RESULT_LIMIT = 240;
 
@@ -264,27 +265,23 @@ export function CardBrowserPage() {
     setSelected(card);
   }
 
-  return (
-    <div className="min-h-screen bg-[#121213] flex flex-col">
-      <Header playDate={getTodayString()} />
+  const activeFilterCount = describeFilters(filters).activeFilterCount;
+  const backTo = returnTo && returnTo !== "/cards" ? returnTo : "/";
 
-      <main className="flex-1 w-full max-w-6xl mx-auto px-3 sm:px-5 pt-4 sm:pt-6 pb-12 flex flex-col gap-4">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div>
-            <h2 className="text-white text-xl sm:text-2xl font-bold">Card Browser</h2>
-            <p className="text-[#818384] text-xs sm:text-sm mt-0.5">
-              Filter the card pool by Fabloodle&apos;s categories. Tap a card to view it or guess
-              it on your active puzzle.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={reset}
-            className="px-3 py-1.5 rounded-lg bg-[#3a3a3c] hover:bg-[#4a4a4e] text-white font-semibold text-xs uppercase tracking-wide transition-colors"
-          >
-            Reset
-          </button>
-        </div>
+  return (
+    <>
+      <Page width="max-w-6xl">
+        <PageHeader
+          eyebrow="Card browser"
+          title="Browse the card pool"
+          subtitle="Filter by Fabloodle's categories to narrow down the answer. Open a card to see it, or guess it on your puzzle."
+          actions={
+            <Link to={backTo} className="btn btn-secondary btn-sm">
+              <ArrowLeftIcon size={16} />
+              Back to puzzle
+            </Link>
+          }
+        />
 
         <FilterPanel
           filters={filters}
@@ -293,51 +290,60 @@ export function CardBrowserPage() {
           toggleArrayValue={toggleArrayValue}
         />
 
-        <div className="flex items-center justify-between text-[#818384] text-sm border-t border-[#3a3a3c] pt-3">
-          <span>
-            <span className="text-white font-semibold">{results.length}</span>{" "}
+        <div className="flex flex-wrap items-center justify-between gap-2 mt-6 mb-3">
+          <p className="tnum text-sm text-muted">
+            <span className="text-fg font-semibold">{results.length.toLocaleString()}</span>{" "}
             {results.length === 1 ? "card" : "cards"}
             {truncated && (
-              <span className="text-[#d4a843] ml-2">
-                (showing first {RESULT_LIMIT} — narrow your filters)
+              <span className="text-warn ml-2">
+                Showing the first {RESULT_LIMIT}. Narrow your filters to see more.
               </span>
             )}
-          </span>
+          </p>
+          {activeFilterCount > 0 && (
+            <button type="button" onClick={reset} className="btn btn-ghost btn-sm">
+              <CloseIcon size={15} />
+              Clear {activeFilterCount} {activeFilterCount === 1 ? "filter" : "filters"}
+            </button>
+          )}
         </div>
 
         {visible.length === 0 ? (
-          <div className="text-center text-[#818384] py-16">
+          <div className="panel text-center text-muted py-16 text-sm">
             No cards match these filters.
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
-            {visible.map((card) => (
-              <button
-                key={card.id}
-                type="button"
-                onClick={() => handleCardClick(card)}
-                className="flex flex-col items-center gap-2 p-2 rounded-lg bg-[#1a1a1b] border border-[#3a3a3c] hover:border-[#d4a843]/60 transition-colors text-left"
-              >
-                <CardAvatar card={card} size={96} />
-                <div className="w-full min-w-0">
-                  <div className="text-white text-xs font-semibold leading-tight truncate">
-                    {card.name}
-                  </div>
-                  <div className="text-[#818384] text-[10px] mt-0.5 truncate">
-                    {card.type.join(" // ")}
-                    {effectiveClass(card).some((c) => c !== "Generic" && c !== "None")
-                      ? ` · ${effectiveClass(card).filter((c) => c !== "Generic").join("/")}`
-                      : ""}
-                    {card.talent.some((t) => t !== "None")
-                      ? ` · ${card.talent.filter((t) => t !== "None").join("/")}`
-                      : ""}
-                  </div>
-                </div>
-              </button>
-            ))}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+            {visible.map((card) => {
+              const cls = effectiveClass(card).filter((c) => c !== "Generic" && c !== "None");
+              const talent = card.talent.filter((t) => t !== "None");
+              return (
+                <button
+                  key={card.id}
+                  type="button"
+                  onClick={() => handleCardClick(card)}
+                  className="group flex flex-col gap-2 p-2 rounded-lg bg-surface border border-line shadow-sm hover:border-accent/60 hover:bg-sunken transition-colors text-left"
+                >
+                  <span className="flex justify-center">
+                    <CardAvatar card={card} size={110} />
+                  </span>
+                  <span className="w-full min-w-0 px-0.5">
+                    <span className="block text-[13px] font-semibold leading-tight truncate group-hover:text-accent-text">
+                      {card.name}
+                    </span>
+                    <span className="block text-muted text-[11px] mt-0.5 truncate">
+                      {card.type.join(" // ")}
+                      {cls.length > 0 ? ` · ${cls.join("/")}` : ""}
+                      {talent.length > 0 ? ` · ${talent.join("/")}` : ""}
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
           </div>
         )}
-      </main>
+      </Page>
+      <SiteFooter />
 
       {selected && (
         <CardDetailModal
@@ -346,7 +352,7 @@ export function CardBrowserPage() {
           onClose={() => setSelected(null)}
         />
       )}
-    </div>
+    </>
   );
 }
 
@@ -366,7 +372,7 @@ interface FilterPanelProps {
 
 function FilterPanel({ filters, setFilters, options, toggleArrayValue }: FilterPanelProps) {
   return (
-    <div className="rounded-xl border border-[#3a3a3c] bg-[#1a1a1b] p-3 sm:p-4 flex flex-col gap-4">
+    <div className="panel p-4 sm:p-5 flex flex-col gap-4">
       {/* Single-selects */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         <SelectField
@@ -433,10 +439,10 @@ function FilterPanel({ filters, setFilters, options, toggleArrayValue }: FilterP
             return (
               <label
                 key={p}
-                className={`flex items-center gap-2 rounded-full border px-3 py-1.5 cursor-pointer text-xs font-semibold transition-colors ${
+                className={`flex items-center gap-2 rounded-full px-3 h-8 cursor-pointer text-xs font-semibold transition-colors has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-accent ${
                   checked
-                    ? "border-[#d4a843] bg-[#d4a843]/15 text-white"
-                    : "border-[#3a3a3c] text-[#d7d7d7] hover:border-[#818384]"
+                    ? "bg-accent-soft text-accent-text ring-1 ring-inset ring-accent"
+                    : "bg-sunken text-fg ring-1 ring-inset ring-transparent hover:ring-line-strong"
                 }`}
               >
                 <input
@@ -450,10 +456,7 @@ function FilterPanel({ filters, setFilters, options, toggleArrayValue }: FilterP
                     }))
                   }
                 />
-                <span
-                  className="w-3 h-3 rounded-full inline-block border border-black/30"
-                  style={{ backgroundColor: PITCH_COLORS[p] }}
-                />
+                <PitchDot value={p} />
                 {PITCH_NAMES[p]}
               </label>
             );
@@ -479,7 +482,7 @@ function FilterPanel({ filters, setFilters, options, toggleArrayValue }: FilterP
 function FieldGroup({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <span className="text-[#d7d7d7] text-xs font-bold uppercase tracking-wide">{label}</span>
+      <span className="eyebrow">{label}</span>
       {children}
     </div>
   );
@@ -499,7 +502,7 @@ function SelectField({ label, value, options, placeholder, onChange }: SelectFie
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg bg-[#121213] border border-[#3a3a3c] text-white text-sm py-2 px-2.5 focus:outline-none focus:border-[#818384]"
+        className="field w-full h-10"
       >
         <option value="">{placeholder}</option>
         {options.map((o) => (
@@ -525,7 +528,7 @@ function NumericField({ label, filter, onChange }: NumericFieldProps) {
         <select
           value={filter.op}
           onChange={(e) => onChange({ ...filter, op: e.target.value as Op })}
-          className="rounded-lg bg-[#121213] border border-[#3a3a3c] text-white text-sm py-2 px-2 focus:outline-none focus:border-[#818384]"
+          className="field h-10 w-16 !px-2"
         >
           <option value="=">=</option>
           <option value=">">&gt;</option>
@@ -547,7 +550,7 @@ function NumericField({ label, filter, onChange }: NumericFieldProps) {
             const n = parseInt(raw, 10);
             onChange({ ...filter, value: isNaN(n) ? null : n });
           }}
-          className="flex-1 min-w-0 rounded-lg bg-[#121213] border border-[#3a3a3c] text-white text-sm py-2 px-2.5 focus:outline-none focus:border-[#818384] placeholder-[#6f7073]"
+          className="field tnum flex-1 min-w-0 h-10"
         />
       </div>
     </FieldGroup>
@@ -634,8 +637,10 @@ function MultiSelectDropdown({
     >
       <div className="relative" ref={containerRef}>
         <div
-          className={`flex flex-wrap items-center gap-1.5 rounded-lg bg-[#121213] border px-2 py-1.5 transition-colors ${
-            open ? "border-[#818384]" : "border-[#3a3a3c]"
+          className={`flex flex-wrap items-center gap-1.5 rounded-md border min-h-10 px-2 py-1 transition-colors cursor-text ${
+            open
+              ? "bg-surface border-accent shadow-[0_0_0_3px_color-mix(in_oklab,var(--color-accent)_30%,transparent)]"
+              : "bg-sunken border-transparent hover:border-line-strong"
           }`}
           onClick={() => {
             setOpen(true);
@@ -646,7 +651,7 @@ function MultiSelectDropdown({
           {selected.map((value) => (
             <span
               key={value}
-              className="inline-flex items-center gap-1 rounded-md bg-[#d4a843]/15 border border-[#d4a843]/40 text-[#f4d36f] text-xs font-semibold px-1.5 py-0.5"
+              className="inline-flex items-center gap-1 rounded-sm bg-accent-soft text-accent-text text-xs font-semibold pl-2 pr-1 py-0.5"
             >
               {value}
               <button
@@ -657,9 +662,9 @@ function MultiSelectDropdown({
                   e.stopPropagation();
                   onToggle(value);
                 }}
-                className="text-[#f4d36f]/80 hover:text-white text-sm leading-none px-0.5"
+                className="inline-grid place-items-center w-4 h-4 rounded-[3px] opacity-80 hover:opacity-100 hover:bg-accent/20"
               >
-                ×
+                <CloseIcon size={12} />
               </button>
             </span>
           ))}
@@ -674,7 +679,7 @@ function MultiSelectDropdown({
             }}
             onFocus={() => setOpen(true)}
             onKeyDown={handleKeyDown}
-            className="flex-1 min-w-[8ch] bg-transparent text-white text-sm py-1 px-1 outline-none placeholder-[#6f7073]"
+            className="flex-1 min-w-[8ch] bg-transparent text-fg text-sm py-1 px-1 outline-none"
           />
           {selected.length > 0 && (
             <button
@@ -685,7 +690,7 @@ function MultiSelectDropdown({
                 onClear();
                 setQuery("");
               }}
-              className="text-[#818384] hover:text-white text-xs uppercase tracking-wide font-semibold px-1.5"
+              className="text-muted hover:text-fg text-xs font-semibold px-1.5"
             >
               Clear
             </button>
@@ -695,10 +700,10 @@ function MultiSelectDropdown({
         {open && (
           <ul
             ref={listRef}
-            className="absolute z-30 mt-1 w-full max-h-64 overflow-y-auto rounded-lg bg-[#1a1a1b] border border-[#3a3a3c] shadow-xl"
+            className="absolute z-30 mt-1.5 w-full max-h-64 overflow-y-auto panel !shadow-lg p-1"
           >
             {filtered.length === 0 ? (
-              <li className="px-3 py-2 text-[#6f7073] text-sm">No matches</li>
+              <li className="px-3 py-2 text-faint text-sm">No matches</li>
             ) : (
               filtered.map((option, i) => {
                 const isSelected = selected.includes(option);
@@ -711,8 +716,8 @@ function MultiSelectDropdown({
                       onToggle(option);
                     }}
                     onMouseEnter={() => setHighlighted(i)}
-                    className={`flex items-center gap-2 px-3 py-1.5 cursor-pointer text-sm ${
-                      isHighlighted ? "bg-[#3a3a3c] text-white" : "text-[#d7d7d7]"
+                    className={`flex items-center gap-2 px-2.5 py-1.5 rounded-sm cursor-pointer text-sm ${
+                      isHighlighted ? "bg-accent-soft text-fg" : "text-fg"
                     }`}
                   >
                     <input
@@ -720,7 +725,7 @@ function MultiSelectDropdown({
                       readOnly
                       checked={isSelected}
                       tabIndex={-1}
-                      className="w-4 h-4 accent-[#d4a843] cursor-pointer pointer-events-none shrink-0"
+                      className="w-4 h-4 accent-[var(--color-accent)] cursor-pointer pointer-events-none shrink-0"
                     />
                     <span className="truncate">{option}</span>
                   </li>
