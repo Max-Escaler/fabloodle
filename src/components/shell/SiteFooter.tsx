@@ -18,7 +18,7 @@ export function SiteFooter() {
             Join our Discord
           </a>
           <p className="text-xs text-muted">
-            Part of the FAB family with{" "}
+            Part of the FABTools family with{" "}
             <a
               href={fabToolsHref("footer")}
               target="_blank"
