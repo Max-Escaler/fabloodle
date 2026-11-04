@@ -53,7 +53,7 @@ export function CompactCategoryHeader() {
   return (
     <div className="lg:hidden sticky top-[var(--shell-top)] z-10 -mx-4 px-4 sm:-mx-6 sm:px-6 py-1.5 bg-canvas/95 backdrop-blur">
       <div
-        className="grid gap-[3px] sm:gap-1 px-[7px] sm:px-[9px]"
+        className="grid gap-[3px] sm:gap-1 px-1.5 sm:px-2"
         style={{ gridTemplateColumns: COMPACT_COLUMNS }}
       >
         {CATEGORIES.map((cat) => (

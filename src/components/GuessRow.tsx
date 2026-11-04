@@ -208,7 +208,11 @@ function CompactCell({ cellKey, result, delay }: Omit<CellProps, "showLabel">) {
       ? undefined
       : String(result.value);
 
+  const arrow =
+    showArrow && result.direction ? (result.direction === "higher" ? "▲" : "▼") : null;
+
   let content: ReactNode = null;
+  let more = 0;
   if (revealed) {
     if (isPitch) {
       const values = result.value as number[];
@@ -216,27 +220,31 @@ function CompactCell({ cellKey, result, delay }: Omit<CellProps, "showLabel">) {
         values.length === 0 ? (
           <span className="opacity-60">—</span>
         ) : (
-          <PitchDots values={values} dotClass="w-[7px] h-[7px] min-[375px]:w-2 min-[375px]:h-2 sm:w-2.5 sm:h-2.5" gap="gap-px min-[375px]:gap-[2px]" />
+          <PitchDots
+            values={values}
+            dotClass="w-[7px] h-[7px] min-[375px]:w-2 min-[375px]:h-2 sm:w-2.5 sm:h-2.5"
+            gap="gap-px min-[375px]:gap-[2px]"
+          />
         );
     } else if (isTags) {
       if (tags.length === 0) {
         content = <span className="opacity-60">—</span>;
       } else {
-        const more = tags.length > 1 ? `+${tags.length - 1}` : "";
+        more = tags.length - 1;
         content = (
           <>
-            <span className="sm:hidden leading-none">{abbreviate(tags[0])}</span>
-            <span className="hidden sm:block max-w-full truncate leading-tight">
+            <span className="sm:hidden">{abbreviate(tags[0])}</span>
+            <span className="hidden sm:block max-w-full truncate px-0.5">
               {DISPLAY_SHORT[tags[0]] ?? tags[0]}
             </span>
-            {more && <span className="text-[8px] sm:text-[9px] leading-none opacity-75">{more}</span>}
           </>
         );
       }
     } else {
       content = (
-        <span className="tnum text-[12px] sm:text-[13px] leading-none">
+        <span className="tnum inline-flex items-baseline gap-px text-[14px] sm:text-[15px]">
           {DISPLAY_SHORT[String(result.value)] ?? String(result.value)}
+          {arrow && <span className="text-[8px] sm:text-[9px] opacity-80">{arrow}</span>}
         </span>
       );
     }
@@ -244,7 +252,7 @@ function CompactCell({ cellKey, result, delay }: Omit<CellProps, "showLabel">) {
 
   return (
     <div
-      className={`min-w-0 h-11 sm:h-12 flex flex-col items-center justify-center gap-[3px] rounded-[5px] px-px text-[9px] sm:text-[10px] font-bold text-center overflow-hidden ${toneFor(
+      className={`relative min-w-0 h-9 sm:h-11 flex items-center justify-center rounded-[5px] text-[9px] min-[375px]:text-[10px] sm:text-[11px] font-bold leading-none text-center overflow-hidden ${toneFor(
         result,
         revealed
       )} ${revealed ? "cell-flip" : ""}`}
@@ -252,9 +260,9 @@ function CompactCell({ cellKey, result, delay }: Omit<CellProps, "showLabel">) {
       title={revealed ? full : undefined}
     >
       {content}
-      {revealed && showArrow && (
-        <span className="text-[8px] leading-none opacity-80">
-          {result.direction === "higher" ? "▲" : result.direction === "lower" ? "▼" : ""}
+      {more > 0 && (
+        <span className="absolute top-[2px] right-[3px] text-[7.5px] sm:text-[8px] font-semibold opacity-70">
+          +{more}
         </span>
       )}
     </div>
@@ -269,7 +277,6 @@ interface GuessRowProps {
 }
 
 export function GuessRow({ result, rowIndex, isSameStats = false }: GuessRowProps) {
-  const [expanded, setExpanded] = useState(false);
   const BASE_DELAY = rowIndex * 50;
   const CELL_STAGGER = 120;
 
@@ -281,26 +288,21 @@ export function GuessRow({ result, rowIndex, isSameStats = false }: GuessRowProp
 
   return (
     <>
-      {/* Phones and tablets: every category on one line. Tap to expand. */}
+      {/* Phones and tablets: name line over all ten categories on one row. */}
       <div
-        className={`lg:hidden rounded-lg bg-surface border shadow-sm p-1.5 sm:p-2 ${
-          isSameStats ? "border-accent" : "border-line"
+        className={`lg:hidden rounded-md px-1.5 pt-1.5 pb-1.5 sm:px-2 ${
+          isSameStats ? "bg-accent-soft ring-1 ring-inset ring-accent/50" : "bg-surface ring-1 ring-inset ring-line"
         }`}
       >
-        <button
-          type="button"
-          onClick={() => setExpanded((e) => !e)}
-          aria-expanded={expanded}
-          className="w-full flex items-center gap-2 text-left mb-1.5 px-0.5"
-        >
-          <CardAvatar card={result.card} size={18} className="!rounded-[3px]" />
-          <span className="min-w-0 flex-1 truncate text-[13px] font-semibold">
+        <div className="flex items-baseline gap-1.5 min-w-0 px-0.5 mb-1">
+          <span className="min-w-0 truncate text-[13px] font-semibold leading-tight">
             {result.card.name}
-            <span className="font-normal text-muted"> · {result.card.type.join(" // ")}</span>
           </span>
-          {isSameStats && sameStatsBadge}
-          <span className="text-faint text-[10px] shrink-0">{expanded ? "▲" : "▼"}</span>
-        </button>
+          <span className="shrink-0 text-[11px] text-muted leading-tight">
+            {result.card.type.join(" // ")}
+          </span>
+          {isSameStats && <span className="ml-auto self-center">{sameStatsBadge}</span>}
+        </div>
         <div className="grid gap-[3px] sm:gap-1" style={{ gridTemplateColumns: COMPACT_COLUMNS }}>
           {DISPLAY_GRID_CATEGORY_KEYS.map((key, i) => (
             <CompactCell
@@ -311,13 +313,6 @@ export function GuessRow({ result, rowIndex, isSameStats = false }: GuessRowProp
             />
           ))}
         </div>
-        {expanded && (
-          <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5 mt-2 pt-2 border-t border-line">
-            {DISPLAY_GRID_CATEGORY_KEYS.map((key) => (
-              <Cell key={key} cellKey={key} result={result.cells[key]} delay={0} showLabel />
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Desktop: one board row per guess. */}
