@@ -3,7 +3,7 @@
 // placement in Fabloodle sent the visit.
 export const FABTOOLS_URL = "https://fabtools.io";
 export const FABTRADES_URL = "https://fabtrades.net";
-export const CREATOR_URL = "https://twitter.com/mx_bloom";
+export const DISCORD_INVITE_URL = "https://discord.gg/wQcaKeGqGy";
 
 export type SisterPlacement = "sidebar" | "tabbar" | "footer";
 
