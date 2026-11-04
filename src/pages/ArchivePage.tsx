@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { Header } from "../components/Header";
+import { Page, PageHeader } from "../components/ui/Page";
+import { ChevronLeftIcon, ChevronRightIcon, CheckIcon } from "../components/ui/icons";
+import { SiteFooter } from "../components/shell/SiteFooter";
 import { getTodayString } from "../utils/dateUtils";
 import { isSupabaseConfigured } from "../lib/supabase";
 import { fetchPuzzleDatesInRange } from "../utils/puzzleService";
@@ -108,57 +110,81 @@ export function ArchivePage() {
     year: "numeric",
   });
 
+  const isCurrentMonth = viewYear === now.getFullYear() && viewMonth === now.getMonth();
+
   return (
-    <div className="min-h-screen bg-[#121213] flex flex-col">
-      <Header playDate={today} />
+    <>
+      <Page width="max-w-3xl">
+        <PageHeader
+          eyebrow="Archive"
+          title="Past puzzles"
+          subtitle="Missed a day? Every past Fabloodle is here. Your results are saved on this device."
+          actions={
+            <Link to="/" className="btn btn-secondary btn-sm">
+              Today&apos;s puzzle
+            </Link>
+          }
+        />
 
-      <main className="flex-1 flex flex-col items-center gap-6 pt-6 pb-12 px-4 w-full max-w-3xl mx-auto">
-        <div className="w-full flex items-center justify-between">
-          <button
-            type="button"
-            onClick={goPrevMonth}
-            className="text-[#d4a843] text-sm font-semibold hover:underline"
-          >
-            Previous
-          </button>
-          <h2 className="text-xl font-bold text-white tracking-wide">Archive</h2>
-          <button
-            type="button"
-            onClick={goNextMonth}
-            className="text-[#d4a843] text-sm font-semibold hover:underline"
-          >
-            Next
-          </button>
-        </div>
+        {!isSupabaseConfigured() ? (
+          <div className="panel px-5 py-6 text-sm text-muted">
+            Set <code className="text-accent-text">VITE_SUPABASE_URL</code> and{" "}
+            <code className="text-accent-text">VITE_SUPABASE_ANON_KEY</code> to load puzzles here.
+            Until then, only{" "}
+            <Link to="/" className="text-accent-text font-medium hover:underline">
+              today&apos;s game
+            </Link>{" "}
+            is available.
+          </div>
+        ) : (
+          <div className="panel p-3 sm:p-5">
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <button
+                type="button"
+                onClick={goPrevMonth}
+                aria-label="Previous month"
+                className="btn btn-ghost btn-sm !px-2"
+              >
+                <ChevronLeftIcon size={18} />
+              </button>
+              <div className="text-center">
+                <h2 className="section-title">{monthName}</h2>
+                <p className="tnum text-xs text-muted mt-0.5">
+                  {loadingMonth ? (
+                    "Loading…"
+                  ) : (
+                    <>
+                      <span className="text-fg font-semibold">{toPlayInMonth}</span> to play ·{" "}
+                      <span className="text-gain font-semibold">{wonInMonth}</span> solved
+                    </>
+                  )}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={goNextMonth}
+                disabled={isCurrentMonth}
+                aria-label="Next month"
+                className="btn btn-ghost btn-sm !px-2"
+              >
+                <ChevronRightIcon size={18} />
+              </button>
+            </div>
 
-        <p className="text-[#d4a843] text-lg font-semibold">{monthName}</p>
-
-        {!isSupabaseConfigured() && (
-          <p className="text-[#818384] text-sm text-center">
-            Set <code className="text-[#d4a843]">VITE_SUPABASE_URL</code> and{" "}
-            <code className="text-[#d4a843]">VITE_SUPABASE_ANON_KEY</code> to load puzzles here. Until
-            then, use <Link to="/" className="text-[#d4a843] underline">today&apos;s game</Link> only.
-          </p>
-        )}
-
-        {isSupabaseConfigured() && (
-          <>
-            {loadingMonth && (
-              <p className="text-[#818384] text-sm">Loading calendar…</p>
-            )}
-            <div className="w-full grid grid-cols-7 gap-1 text-center">
+            <div className="grid grid-cols-7 gap-1 sm:gap-1.5 text-center">
               {WEEKDAYS.map((w) => (
-                <div key={w} className="text-emerald-400/90 text-[10px] font-bold uppercase py-1">
+                <div key={w} className="eyebrow !text-[10px] py-1">
                   {w}
                 </div>
               ))}
               {cells.map((cell, i) => {
                 if (cell.kind === "empty") {
-                  return <div key={`e-${i}`} className="min-h-[52px]" />;
+                  return <div key={`e-${i}`} className="min-h-[52px] sm:min-h-[60px]" />;
                 }
                 const { dateStr, dayNum } = cell;
                 const hasPuzzle = puzzleDatesForGrid.has(dateStr);
                 const isFuture = dateStr > today;
+                const isToday = dateStr === today;
                 const entry = summary[dateStr];
                 const won = entry?.status === "won";
                 const playing = entry?.status === "playing" && entry.guessCount > 0;
@@ -166,26 +192,25 @@ export function ArchivePage() {
                 const clickable = hasPuzzle && !isFuture;
                 const inner = (
                   <div
-                    className={`rounded-lg min-h-[52px] flex flex-col items-center justify-center gap-0.5 px-1 py-1 text-xs ${
+                    className={`tnum rounded-md min-h-[52px] sm:min-h-[60px] flex flex-col items-center justify-center gap-0.5 px-1 py-1 text-xs transition-colors ${
                       won
-                        ? "bg-[#1a2e28] border border-emerald-500/50"
+                        ? "bg-gain/15 text-gain ring-1 ring-inset ring-gain/40 hover:ring-gain"
                         : playing
-                          ? "bg-[#1a1a24] border border-[#d4a843]/40"
+                          ? "bg-accent-soft text-accent-text ring-1 ring-inset ring-accent/40 hover:ring-accent"
                           : clickable
-                            ? "bg-[#1a1a1b] border border-[#3a3a3c] hover:border-[#d4a843]/60"
-                            : "opacity-35 border border-transparent"
-                    }`}
+                            ? "bg-sunken text-fg hover:ring-1 hover:ring-inset hover:ring-accent"
+                            : "text-faint opacity-50"
+                    } ${isToday ? "outline-2 outline-offset-1 outline-accent" : ""}`}
                   >
-                    <span className={`font-bold ${won ? "text-emerald-400" : "text-[#d4a843]"}`}>
-                      {dayNum}
-                    </span>
+                    <span className="font-semibold text-sm">{dayNum}</span>
                     {won && (
-                      <span className="text-[10px] text-emerald-400 flex items-center gap-0.5">
-                        ✓ {entry?.guessCount}
+                      <span className="text-[10px] font-semibold inline-flex items-center gap-0.5">
+                        <CheckIcon size={11} />
+                        {entry?.guessCount}
                       </span>
                     )}
                     {playing && !won && (
-                      <span className="text-[10px] text-[#818384]">{entry?.guessCount}…</span>
+                      <span className="text-[10px] font-semibold">{entry?.guessCount}…</span>
                     )}
                   </div>
                 );
@@ -194,7 +219,8 @@ export function ArchivePage() {
                   <Link
                     key={dateStr}
                     to={`/play/${dateStr}`}
-                    className="block"
+                    className="block rounded-md"
+                    aria-label={`Play ${dateStr}${won ? ", solved" : ""}`}
                     onClick={() =>
                       trackArchiveDateSelected({
                         playDate: dateStr,
@@ -210,20 +236,24 @@ export function ArchivePage() {
               })}
             </div>
 
-            <p className="text-[#818384] text-sm">
-              <span className="text-[#d4a843] font-semibold">{toPlayInMonth}</span> to play ·{" "}
-              <span className="text-emerald-400 font-semibold">✓ {wonInMonth}</span> played
-            </p>
-          </>
+            <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-4 pt-4 border-t border-line text-xs text-muted">
+              <span className="inline-flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded-[4px] bg-gain/15 ring-1 ring-inset ring-gain/40" />
+                Solved
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded-[4px] bg-accent-soft ring-1 ring-inset ring-accent/40" />
+                In progress
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded-[4px] bg-sunken ring-1 ring-inset ring-line-strong" />
+                Not played
+              </span>
+            </div>
+          </div>
         )}
-
-        <Link
-          to="/"
-          className="text-[#818384] hover:text-white text-sm underline underline-offset-2"
-        >
-          Back to today
-        </Link>
-      </main>
-    </div>
+      </Page>
+      <SiteFooter />
+    </>
   );
 }

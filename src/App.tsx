@@ -5,6 +5,7 @@ import { CardBrowserPage } from "./pages/CardBrowserPage";
 import { ArchivePage } from "./pages/ArchivePage";
 import { getTodayString } from "./utils/dateUtils";
 import { isValidPlayDate } from "./utils/playDate";
+import { AppShell } from "./components/shell/AppShell";
 
 /**
  * Top-level layout that keeps each page mounted across navigations within the
@@ -64,23 +65,27 @@ export function App() {
     return <Navigate to="/" replace />;
   }
 
+  const isArchivePuzzle = activePlayDate !== getTodayString();
+  const puzzlePath = isArchivePuzzle ? `/play/${activePlayDate}` : "/";
+  const pane = (visible: boolean) => (visible ? "flex-1 flex flex-col" : "hidden");
+
   return (
-    <>
+    <AppShell puzzlePath={puzzlePath} isArchivePuzzle={isArchivePuzzle}>
       {playVisited && (
-        <div className={playRoute ? undefined : "hidden"}>
+        <div className={pane(playRoute)}>
           <PlayPageInner key={activePlayDate} playDate={activePlayDate} />
         </div>
       )}
       {cardsVisited && (
-        <div className={cardsRoute ? undefined : "hidden"}>
+        <div className={pane(cardsRoute)}>
           <CardBrowserPage />
         </div>
       )}
       {archiveVisited && (
-        <div className={archiveRoute ? undefined : "hidden"}>
+        <div className={pane(archiveRoute)}>
           <ArchivePage />
         </div>
       )}
-    </>
+    </AppShell>
   );
 }

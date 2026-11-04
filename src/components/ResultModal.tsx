@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import type { GuessResult } from "../utils/gameLogic";
 import { getTodayString } from "../utils/dateUtils";
 import { buildShareText } from "../utils/shareUtils";
@@ -7,8 +7,21 @@ import type { FabCard } from "../data/cards";
 import { CardAvatar } from "./CardAvatar";
 import type { GameStats } from "../utils/statsUtils";
 import type { GuessStats } from "../utils/puzzleService";
+import { Modal, ModalClose } from "./ui/Modal";
+import { PitchDots } from "./ui/Pitch";
+import { CheckIcon, CopyIcon } from "./ui/icons";
+import { formatPlayDate } from "../utils/formatDate";
 
-const PITCH_COLORS: Record<number, string> = { 1: "#e74c3c", 2: "#f1c40f", 3: "#3498db" };
+function Stat({ value, label, tone = "text-fg" }: { value: ReactNode; label: string; tone?: string }) {
+  return (
+    <div className="flex flex-col rounded-md bg-sunken px-3 py-2.5 min-w-0">
+      <span className={`tnum font-display text-2xl font-bold leading-none ${tone}`}>{value}</span>
+      <span className="eyebrow mt-1.5 !text-[10px] truncate">{label}</span>
+    </div>
+  );
+}
+
+
 
 interface ResultModalProps {
   won: boolean;
@@ -37,14 +50,14 @@ export function ResultModal({
   const [copied, setCopied] = useState(false);
   const [avatarSize, setAvatarSize] = useState(() =>
     typeof window !== "undefined" && window.matchMedia("(max-width: 480px)").matches
-      ? 76
-      : 96
+      ? 64
+      : 76
   );
   const isArchiveGame = playDate !== getTodayString();
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 480px)");
-    const sync = () => setAvatarSize(mq.matches ? 76 : 96);
+    const sync = () => setAvatarSize(mq.matches ? 64 : 76);
     mq.addEventListener("change", sync);
     return () => mq.removeEventListener("change", sync);
   }, []);
@@ -62,155 +75,78 @@ export function ResultModal({
     });
   }
 
+  const guessWord = guesses.length === 1 ? "guess" : "guesses";
+
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
-      onClick={onClose}
+    <Modal
+      onClose={onClose}
+      label="Results"
+      className="max-h-[min(92dvh,680px)] flex flex-col min-h-0"
     >
-      <div
-        className="bg-[#1a1a1b] border border-[#3a3a3c] rounded-2xl p-4 sm:p-5 w-full max-w-md shadow-2xl max-h-[min(92dvh,640px)] flex flex-col min-h-0"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain space-y-3">
-          {/* Win: image + title left, stats right. Loss: centered header only */}
-          {won ? (
-            <div className="flex gap-3 items-start">
-              <div className="flex flex-col items-center shrink-0 max-w-[45%] min-w-0">
-                <CardAvatar
-                  card={answer}
-                  size={avatarSize}
-                  className="rounded-xl mb-2"
-                />
-                <p className="text-[#818384] text-[10px] sm:text-xs uppercase tracking-widest mb-0.5 text-center leading-tight">
-                  🎉 Correct!
-                </p>
-                <h2 className="text-white text-base sm:text-lg font-bold text-center leading-tight">
-                  {answer.name}
-                </h2>
-                {isArchiveGame && (
-                  <p className="mt-0.5 text-[10px] uppercase tracking-wide text-[#f4d36f] text-center">
-                    {playDate}
-                  </p>
-                )}
-                <div className="flex flex-wrap items-center justify-center gap-1 mt-1">
-                  <span className="text-[#d4a843] text-xs">{answer.type.join(" // ")}</span>
-                  {answer.pitchValues.length > 0 && (
-                    <div className="flex gap-0.5">
-                      {answer.pitchValues.map((v) => (
-                        <span
-                          key={v}
-                          className="w-2.5 h-2.5 rounded-full inline-block"
-                          style={{ backgroundColor: PITCH_COLORS[v] }}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
+      <div className="flex items-start justify-between gap-3 px-5 pt-5">
+        <div className="min-w-0">
+          <p className="eyebrow !text-accent-text">
+            {won ? "Solved" : isArchiveGame ? "Archive puzzle" : "Today's card"}
+            {isArchiveGame && <span className="tnum text-muted"> · {formatPlayDate(playDate)}</span>}
+          </p>
+          <h2 className="page-title !text-2xl mt-1">
+            {won ? `Got it in ${guesses.length}` : answer.name}
+          </h2>
+        </div>
+        <ModalClose onClick={onClose} className="-mr-2 -mt-1" />
+      </div>
 
-              <div className="flex-1 min-w-0 flex flex-col gap-2">
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="flex flex-col items-center bg-[#121213] rounded-lg px-2 py-2">
-                    <span className="text-xl sm:text-2xl font-bold text-[#d4a843] leading-none">
-                      {stats.streak}
-                    </span>
-                    <span className="text-[#818384] text-[9px] uppercase tracking-wide mt-0.5 text-center leading-tight">
-                      🔥 Streak
-                    </span>
-                  </div>
-                  <div className="flex flex-col items-center bg-[#121213] rounded-lg px-2 py-2">
-                    <span className="text-xl sm:text-2xl font-bold text-[#538d4e] leading-none">
-                      {stats.totalWins}
-                    </span>
-                    <span className="text-[#818384] text-[9px] uppercase tracking-wide mt-0.5 text-center leading-tight">
-                      ★ Wins
-                    </span>
-                  </div>
-                </div>
-
-                {showGlobalAverage && (
-                  <div className="text-center bg-[#121213] rounded-lg px-2 py-2">
-                    <p className="text-[#818384] text-[9px] uppercase tracking-wide mb-0.5 leading-tight">
-                      Global avg (this puzzle)
-                    </p>
-                    {globalStats === null ? (
-                      <p className="text-[#818384] text-xs">Loading…</p>
-                    ) : globalStats.completionCount === 0 ? (
-                      <p className="text-[#818384] text-xs leading-tight">No data yet.</p>
-                    ) : (
-                      <p className="text-white text-sm font-bold leading-tight">
-                        {globalStats.avgGuesses} guesses
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-4 pb-4 space-y-4">
+        <div className="flex gap-4 items-center">
+          <CardAvatar card={answer} size={avatarSize} className="rounded-md shadow-md" />
+          <div className="min-w-0 flex-1">
+            <p className="section-title leading-tight">{answer.name}</p>
+            <div className="flex flex-wrap items-center gap-2 mt-1">
+              <span className="text-muted text-sm">{answer.type.join(" // ")}</span>
+              <PitchDots values={answer.pitchValues} dotClass="w-3 h-3" />
             </div>
-          ) : (
-            <div className="flex flex-col items-center">
-              <CardAvatar card={answer} size={avatarSize} className="mb-2 rounded-xl" />
-              <p className="text-[#818384] text-xs uppercase tracking-widest mb-1 text-center">
-                {isArchiveGame ? "Archive Puzzle" : "Today's Card"}
-              </p>
-              <h2 className="text-white text-xl font-bold text-center leading-tight">
-                {answer.name}
-              </h2>
-              {isArchiveGame && (
-                <p className="mt-1 text-xs uppercase tracking-wide text-[#f4d36f]">
-                  Puzzle date: {playDate}
-                </p>
-              )}
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-[#d4a843] text-sm">{answer.type.join(" // ")}</span>
-                {answer.pitchValues.length > 0 && (
-                  <div className="flex gap-1">
-                    {answer.pitchValues.map((v) => (
-                      <span
-                        key={v}
-                        className="w-3 h-3 rounded-full inline-block"
-                        style={{ backgroundColor: PITCH_COLORS[v] }}
-                      />
-                    ))}
-                  </div>
-                )}
+            {won && (
+              <div className="grid grid-cols-2 gap-2 mt-3">
+                <Stat value={stats.streak} label="Streak" tone="text-accent-text" />
+                <Stat value={stats.totalWins} label="Wins" tone="text-gain" />
               </div>
-            </div>
-          )}
-
-          {/* Share preview — full width under the row above */}
-          <div className="bg-[#121213] rounded-lg p-2 sm:p-3 text-center">
-            <p className="text-[#818384] text-[10px] sm:text-xs mb-1 uppercase tracking-wide">
-              Share
-            </p>
-            <pre className="text-[11px] sm:text-sm text-white font-mono leading-snug whitespace-pre-wrap break-words max-h-[4.5rem] sm:max-h-[5.5rem] overflow-y-auto">
-              {buildShareText(guesses, won, playDate)}
-            </pre>
+            )}
           </div>
         </div>
 
-        {/* Buttons + summary — stays visible at bottom of modal */}
-        <div className="shrink-0 pt-3 space-y-2 border-t border-[#2a2a2b]">
-          <div className="flex gap-2 sm:gap-3">
-            <button
-              onClick={handleShare}
-              className="flex-1 py-2.5 sm:py-3 rounded-xl bg-[#538d4e] hover:bg-[#6aad65] text-white font-bold text-sm sm:text-base transition-colors"
-            >
-              {copied ? "Copied! ✓" : "Copy Results"}
-            </button>
-            <button
-              onClick={onClose}
-              className="px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl bg-[#3a3a3c] hover:bg-[#4a4a4e] text-white font-bold text-sm sm:text-base transition-colors"
-            >
-              Close
-            </button>
+        {won && showGlobalAverage && (
+          <div className="flex items-center justify-between gap-3 rounded-md bg-sunken px-3 py-2.5">
+            <span className="eyebrow !text-[10px]">Everyone&apos;s average</span>
+            {globalStats === null ? (
+              <span className="text-muted text-sm">Loading…</span>
+            ) : globalStats.completionCount === 0 ? (
+              <span className="text-muted text-sm">No data yet</span>
+            ) : (
+              <span className="tnum text-sm font-semibold">{globalStats.avgGuesses} guesses</span>
+            )}
           </div>
-          <p className="text-center text-[#818384] text-xs sm:text-sm">
-            {won
-              ? `Solved in ${guesses.length} ${guesses.length === 1 ? "guess" : "guesses"}`
-              : `Answer: ${answer.name}`}
-          </p>
+        )}
+
+        <div>
+          <p className="eyebrow mb-1.5">Share</p>
+          <pre className="rounded-md bg-sunken px-3 py-2.5 text-[12px] sm:text-[13px] font-mono leading-snug whitespace-pre-wrap break-words max-h-[6rem] overflow-y-auto">
+            {buildShareText(guesses, won, playDate)}
+          </pre>
         </div>
       </div>
-    </div>
+
+      <div className="shrink-0 px-5 py-4 border-t border-line flex gap-2">
+        <button type="button" onClick={handleShare} className="btn btn-primary flex-1">
+          {copied ? <CheckIcon size={17} /> : <CopyIcon size={17} />}
+          {copied ? "Copied" : "Copy results"}
+        </button>
+        <button type="button" onClick={onClose} className="btn btn-secondary">
+          Close
+        </button>
+      </div>
+      <span className="sr-only">
+        {won ? `Solved in ${guesses.length} ${guessWord}` : `Answer: ${answer.name}`}
+      </span>
+    </Modal>
   );
 }

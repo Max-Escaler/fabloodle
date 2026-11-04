@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
-import { useParams, Navigate, useLocation, useNavigate } from "react-router-dom";
+import { useParams, Navigate, useLocation, useNavigate, Link } from "react-router-dom";
 import { CARDS } from "../data/cards";
 import { getDailyCardForDate, getTodayString } from "../utils/dateUtils";
 import {
@@ -10,7 +10,6 @@ import {
 } from "../utils/gameLogic";
 import { getCardReleases } from "../utils/cardReleases";
 import type { GuessResult, CategoryKey, CellResult } from "../utils/gameLogic";
-import { Header } from "../components/Header";
 import { CardSearch } from "../components/CardSearch";
 import { GuessGrid } from "../components/GuessGrid";
 import { ResultModal } from "../components/ResultModal";
@@ -36,9 +35,13 @@ import {
   trackResultModalOpened,
   trackHowToPlayOpened,
 } from "../utils/analytics";
+import { Modal } from "../components/ui/Modal";
+import { Page, PageHeader } from "../components/ui/Page";
+import { PitchDots } from "../components/ui/Pitch";
+import { BulbIcon, HelpIcon, TrophyIcon } from "../components/ui/icons";
+import { SiteFooter } from "../components/shell/SiteFooter";
+import { formatPlayDate } from "../utils/formatDate";
 
-const PITCH_COLORS: Record<number, string> = { 1: "#e74c3c", 2: "#f1c40f", 3: "#3498db" };
-const PITCH_NAMES: Record<number, string> = { 1: "Red", 2: "Yellow", 3: "Blue" };
 
 const CATEGORY_LABELS: Record<CategoryKey, string> = {
   type: "Type",
@@ -65,63 +68,46 @@ function HintPopup({ data, onClose }: { data: HintPopupData; onClose: () => void
   const isStringArray = isArray && !isPitch;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
-      onClick={onClose}
-    >
-      <div
-        className="bg-[#1a1a1b] border border-[#d4a843] rounded-2xl p-6 w-full max-w-xs shadow-2xl text-center"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <p className="text-[#d4a843] text-xs font-bold uppercase tracking-widest mb-1">Hint</p>
-        <p className="text-[#818384] text-sm mb-4">
-          The correct <span className="text-white font-semibold">{label}</span> is:
-        </p>
+    <Modal onClose={onClose} width="max-w-xs" label="Hint" className="p-6 text-center">
+      <span className="inline-grid place-items-center w-10 h-10 rounded-full bg-accent-soft text-accent-text mb-3">
+        <BulbIcon size={20} />
+      </span>
+      <p className="eyebrow !text-accent-text mb-1">Hint</p>
+      <p className="text-muted text-sm mb-4">
+        The answer&apos;s <span className="text-fg font-semibold">{label}</span> is
+      </p>
 
-        <div className="flex items-center justify-center min-h-[48px] mb-5">
-          {isPitch ? (
-            <div className="flex gap-2 justify-center">
-              {(value as number[]).length === 0 ? (
-                <span className="text-white text-lg font-bold">Colorless</span>
-              ) : (
-                (value as number[]).map((v) => (
-                  <span
-                    key={v}
-                    className="w-7 h-7 rounded-full inline-block"
-                    style={{ backgroundColor: PITCH_COLORS[v] }}
-                    title={PITCH_NAMES[v]}
-                  />
-                ))
-              )}
-            </div>
-          ) : isStringArray ? (
-            <div className="flex flex-wrap gap-1.5 justify-center">
-              {(value as string[]).length === 0 ? (
-                <span className="text-white text-lg font-bold">—</span>
-              ) : (
-                (value as string[]).map((s) => (
-                  <span
-                    key={s}
-                    className="bg-white/10 text-white text-sm font-semibold rounded px-2 py-0.5"
-                  >
-                    {s}
-                  </span>
-                ))
-              )}
-            </div>
+      <div className="flex items-center justify-center min-h-[56px] mb-5 rounded-lg bg-sunken px-3 py-3">
+        {isPitch ? (
+          (value as number[]).length === 0 ? (
+            <span className="font-display text-lg font-bold">Colorless</span>
           ) : (
-            <span className="text-white text-2xl font-bold">{String(value)}</span>
-          )}
-        </div>
-
-        <button
-          onClick={onClose}
-          className="w-full py-2.5 rounded-xl bg-[#3a3a3c] hover:bg-[#4a4a4e] text-white font-bold text-sm transition-colors"
-        >
-          Got it
-        </button>
+            <PitchDots values={value as number[]} dotClass="w-7 h-7" gap="gap-2" />
+          )
+        ) : isStringArray ? (
+          <div className="flex flex-wrap gap-1.5 justify-center">
+            {(value as string[]).length === 0 ? (
+              <span className="font-display text-lg font-bold">—</span>
+            ) : (
+              (value as string[]).map((s) => (
+                <span
+                  key={s}
+                  className="bg-raised text-fg text-sm font-semibold rounded-sm px-2 py-0.5"
+                >
+                  {s}
+                </span>
+              ))
+            )}
+          </div>
+        ) : (
+          <span className="tnum font-display text-2xl font-bold">{String(value)}</span>
+        )}
       </div>
-    </div>
+
+      <button type="button" onClick={onClose} className="btn btn-primary w-full">
+        Got it
+      </button>
+    </Modal>
   );
 }
 
@@ -153,6 +139,12 @@ export function PlayPageInner({ playDate }: { playDate: string }) {
   const [hintPopup, setHintPopup] = useState<HintPopupData | null>(null);
   const [globalStats, setGlobalStats] = useState<GuessStats | null>(null);
   const [showHowToPlay, setShowHowToPlay] = useState(() => !isHowToPlayDismissed());
+
+  function openHowToPlay() {
+    howToPlayOpenedFiredRef.current = true;
+    trackHowToPlayOpened({ autoOpened: false });
+    setShowHowToPlay(true);
+  }
 
   const completionSentRef = useRef(false);
   // Once we submit a guess from the Card Browser flow, `handleGuess`'s
@@ -395,77 +387,119 @@ export function PlayPageInner({ playDate }: { playDate: string }) {
     navigate(location.pathname, { replace: true, state: null });
   }, [answerCard, location.state, location.pathname, handleGuess, navigate]);
 
-  return (
-    <div className="min-h-screen bg-[#121213] flex flex-col">
-      <Header playDate={playDate} isArchiveGame={isArchiveGame} />
+  const solved = gameState === "won";
 
+  return (
+    <>
       {toast && (
-        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-white text-black text-sm font-bold px-4 py-2 rounded-lg shadow-lg">
+        <div
+          role="status"
+          className="toast-in fixed top-[calc(var(--shell-top)+12px)] left-1/2 lg:left-[calc(50%+var(--shell-left)/2)] -translate-x-1/2 z-50 panel !shadow-lg px-4 py-2.5 text-sm font-semibold"
+        >
           {toast}
         </div>
       )}
 
-      <main className="flex-1 flex flex-col items-center gap-4 sm:gap-6 pt-4 sm:pt-6 pb-10 px-3 sm:px-4 w-full">
-        {puzzleLoading && (
-          <p className="text-[#818384] text-sm">Loading puzzle…</p>
-        )}
+      <Page width="max-w-6xl">
+        <PageHeader
+          eyebrow={
+            isArchiveGame ? (
+              <span className="inline-flex items-center gap-2">
+                <span className="rounded-sm bg-accent-soft text-accent-text px-1.5 py-0.5">
+                  Archive
+                </span>
+                <span className="tnum">{formatPlayDate(playDate)}</span>
+              </span>
+            ) : (
+              <span className="tnum">Daily puzzle · {formatPlayDate(playDate)}</span>
+            )
+          }
+          title={isArchiveGame ? "Guess this day's card" : "Guess today's card"}
+          subtitle={
+            isArchiveGame ? (
+              <>
+                You&apos;re playing a past puzzle.{" "}
+                <Link to="/" className="font-medium text-accent-text hover:underline">
+                  Play today&apos;s instead
+                </Link>
+              </>
+            ) : (
+              "Pick any Flesh and Blood card. Each guess shows how close its stats are to the answer."
+            )
+          }
+          actions={
+            <button type="button" onClick={openHowToPlay} className="btn btn-secondary btn-sm">
+              <HelpIcon size={16} />
+              How to play
+            </button>
+          }
+        />
+
+        {puzzleLoading && <p className="text-muted text-sm">Loading puzzle…</p>}
         {puzzleError && (
-          <p className="text-red-400/90 text-sm text-center max-w-md px-4">{puzzleError}</p>
+          <p className="panel px-4 py-3 text-loss text-sm max-w-xl">{puzzleError}</p>
         )}
 
         {!puzzleLoading && !puzzleError && answerCard && (
-          <>
-            {isArchiveGame && (
-              <div className="w-full max-w-2xl rounded-xl border border-[#d4a843]/30 bg-[#d4a843]/10 px-4 py-3 text-center">
-                <p className="text-[#f4d36f] text-xs font-semibold uppercase tracking-[0.2em]">
-                  Archive Puzzle
-                </p>
-                <p className="mt-1 text-sm text-[#d7d7d7]">
-                  You are playing the puzzle from <span className="font-semibold text-white">{playDate}</span>, not today&apos;s game.
-                </p>
-              </div>
-            )}
-
-            <div className="w-full max-w-2xl">
+          <div className="flex flex-col gap-5">
+            <div className="flex flex-col gap-3 max-w-2xl">
               <CardSearch
                 cards={CARDS}
                 guessedIds={guessedIds}
                 onSelect={handleGuess}
-                disabled={gameState !== "playing"}
+                disabled={solved}
               />
+
+              <div className="flex flex-wrap items-center gap-2 min-h-8">
+                <span className="tnum inline-flex items-center gap-1.5 text-sm text-muted">
+                  <span className="text-fg font-semibold">{guesses.length}</span>
+                  {guesses.length === 1 ? "guess" : "guesses"}
+                </span>
+                <div className="flex-1" />
+                {gameState === "playing" && (
+                  <button
+                    type="button"
+                    onClick={handleHintClick}
+                    disabled={!canUseHint}
+                    className="btn btn-secondary btn-sm"
+                    title={
+                      guesses.length === 0
+                        ? "Make a guess first"
+                        : canUseHint
+                          ? "Reveal one category of the answer"
+                          : "No more hints for this guess"
+                    }
+                  >
+                    <BulbIcon size={16} />
+                    {guesses.length > 0 && !canUseHint ? "No more hints" : "Get a hint"}
+                  </button>
+                )}
+                {solved && !showModal && (
+                  <button type="button" onClick={openResultsModal} className="btn btn-primary btn-sm">
+                    <TrophyIcon size={16} />
+                    See results
+                  </button>
+                )}
+              </div>
             </div>
 
-            <div className="text-[#818384] text-sm">
-              {guesses.length} {guesses.length === 1 ? "guess" : "guesses"}
-            </div>
-
-            {gameState === "playing" && (
-              <button
-                onClick={handleHintClick}
-                disabled={!canUseHint}
-                className="px-4 py-2 bg-[#3a3a3c] disabled:bg-[#202022] disabled:text-[#555] hover:bg-[#4a4a4e] text-white font-semibold rounded-lg text-sm transition-colors"
-              >
-                {canUseHint ? "Get a hint" : "No more hints"}
-              </button>
-            )}
-
-            {guesses.length > 0 && (
-              <div className="w-full max-w-[1280px] sm:overflow-x-auto">
+            {guesses.length > 0 ? (
+              <div className="w-full lg:overflow-x-auto -mx-1 px-1">
                 <GuessGrid guesses={guesses} />
               </div>
+            ) : (
+              <div className="panel px-5 py-8 text-center max-w-2xl">
+                <p className="section-title">No guesses yet</p>
+                <p className="text-sm text-muted mt-1.5">
+                  Search above to make your first guess. Green tiles match the answer, amber tiles
+                  are close, and arrows point toward the answer&apos;s number.
+                </p>
+              </div>
             )}
-
-            {gameState === "won" && !showModal && (
-              <button
-                onClick={openResultsModal}
-                className="mt-2 px-8 py-4 bg-[#538d4e] hover:bg-[#6aad65] text-white font-bold rounded-lg text-base transition-colors"
-              >
-                🎉 See Results
-              </button>
-            )}
-          </>
+          </div>
         )}
-      </main>
+      </Page>
+      <SiteFooter />
 
       {hintPopup && (
         <HintPopup data={hintPopup} onClose={() => setHintPopup(null)} />
@@ -485,6 +519,6 @@ export function PlayPageInner({ playDate }: { playDate: string }) {
           onClose={() => setShowModal(false)}
         />
       )}
-    </div>
+    </>
   );
 }

@@ -1,53 +1,50 @@
 import type { ReactNode } from "react";
 import { dismissHowToPlay } from "../utils/howToPlayStorage";
 import { trackHowToPlayDismissed } from "../utils/analytics";
-
-const PITCH = { 1: "#e74c3c", 2: "#f1c40f", 3: "#3498db" } as const;
+import { Modal, ModalClose } from "./ui/Modal";
+import { PitchDots } from "./ui/Pitch";
 
 interface HowToPlayModalProps {
   onClose: () => void;
 }
 
-function DemoCell({
-  tone,
-  label,
-  children,
-}: {
-  tone: "correct" | "close" | "wrong" | "neutral";
-  label: string;
-  children: ReactNode;
-}) {
-  const bg =
-    tone === "correct"
-      ? "bg-[#538d4e]"
-      : tone === "close"
-        ? "bg-[#b59f3b]"
-        : tone === "wrong"
-          ? "bg-[#3a3a3c]"
-          : "bg-[#1a1a1b] border border-[#3a3a3c]";
+type Tone = "correct" | "close" | "wrong" | "neutral";
+
+const TONE: Record<Tone, string> = {
+  correct: "bg-hit text-on-hit",
+  close: "bg-near text-on-near",
+  wrong: "bg-miss text-on-miss",
+  neutral: "bg-sunken text-muted ring-1 ring-inset ring-line",
+};
+
+function DemoCell({ tone, label, children }: { tone: Tone; label: string; children: ReactNode }) {
   return (
     <div
-      className={`flex flex-col items-center justify-center gap-0.5 rounded-lg px-1.5 py-2 min-h-[52px] flex-1 min-w-0 max-w-[92px] ${bg}`}
+      className={`flex flex-col items-center justify-center gap-1 rounded-md px-1.5 py-2 min-h-[56px] flex-1 min-w-0 ${TONE[tone]}`}
     >
-      <span className="text-white/55 text-[8px] font-semibold uppercase tracking-wide leading-none">
+      <span className="text-[9px] font-semibold uppercase tracking-[0.08em] leading-none opacity-70">
         {label}
       </span>
-      <div className="text-white text-[11px] font-bold text-center leading-tight">{children}</div>
+      <div className="text-xs font-bold text-center leading-tight">{children}</div>
     </div>
   );
 }
 
-function PitchDots() {
+function Example({ cells, children }: { cells: ReactNode; children: ReactNode }) {
   return (
-    <div className="flex gap-0.5 justify-center">
-      {([1, 2] as const).map((v) => (
-        <span
-          key={v}
-          className="w-3 h-3 rounded-full inline-block shrink-0"
-          style={{ backgroundColor: PITCH[v] }}
-        />
-      ))}
+    <div>
+      <div className="flex gap-1.5 mb-2">{cells}</div>
+      <p className="text-sm text-muted">{children}</p>
     </div>
+  );
+}
+
+function Legend({ tone, label }: { tone: Tone; label: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 text-sm">
+      <span className={`w-3.5 h-3.5 rounded-[4px] ${TONE[tone]}`} />
+      {label}
+    </span>
   );
 }
 
@@ -59,122 +56,94 @@ export function HowToPlayModal({ onClose }: HowToPlayModalProps) {
   }
 
   return (
-    <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4"
-      onClick={handleClose}
-    >
-      <div
-        className="relative bg-[#1a1a1b] border border-[#3a3a3c] rounded-2xl p-6 pt-12 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button
-          type="button"
-          onClick={handleClose}
-          className="absolute right-4 top-4 text-[#818384] hover:text-white text-2xl leading-none w-9 h-9 flex items-center justify-center rounded-lg hover:bg-[#3a3a3c]/50 transition-colors"
-          aria-label="Close"
-        >
-          ×
-        </button>
+    <Modal onClose={handleClose} z="z-[60]" label="How to play" className="max-h-[90dvh] overflow-y-auto">
+      <div className="flex items-start justify-between gap-3 px-6 pt-6">
+        <div>
+          <p className="eyebrow !text-accent-text">How to play</p>
+          <h2 className="page-title !text-2xl mt-1">Guess the daily card</h2>
+        </div>
+        <ModalClose onClick={handleClose} className="-mr-2 -mt-1" />
+      </div>
 
-        <h2 className="text-white text-2xl font-bold text-center mb-1">How To Play</h2>
-        <p className="text-[#b8b8b8] text-sm text-center mb-5">
-          Guess a random Flesh and Blood card!
+      <div className="px-6 pt-3 pb-6">
+        <p className="text-sm text-muted">
+          Every day there&apos;s a new mystery Flesh and Blood card. Guess any card and each of its
+          stats is compared with the answer.
         </p>
 
-        <ul className="text-[#d0d0d0] text-sm space-y-2 mb-6 list-disc pl-5">
-          <li>
-            Green is correct, Yellow means close or partial, Grey is incorrect
-          </li>
-          <li>
-            Arrows show whether the answer is higher or lower than your guess
-          </li>
-        </ul>
+        <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-4">
+          <Legend tone="correct" label="Correct" />
+          <Legend tone="close" label="Close or partial" />
+          <Legend tone="wrong" label="Wrong" />
+        </div>
+        <p className="text-sm text-muted mt-2">
+          Arrows on numbers show whether the answer is higher ▲ or lower ▼.
+        </p>
 
-        <p className="text-white text-sm font-bold mb-3">Examples</p>
+        <p className="section-title mt-6 mb-3">Examples</p>
+        <div className="space-y-4">
+          <Example
+            cells={
+              <>
+                <DemoCell tone="correct" label="Type">Action</DemoCell>
+                <DemoCell tone="neutral" label="Cost">2</DemoCell>
+                <DemoCell tone="neutral" label="Colors">
+                  <PitchDots values={[1, 2]} dotClass="w-3 h-3" gap="gap-0.5" />
+                </DemoCell>
+                <DemoCell tone="neutral" label="Class">Ninja</DemoCell>
+              </>
+            }
+          >
+            <span className="text-fg font-semibold">Type</span> matches the answer exactly.
+          </Example>
 
-        <div className="space-y-4 mb-5">
-          <div>
-            <div className="flex gap-1 mb-2">
-              <DemoCell tone="correct" label="Type">
-                Action
-              </DemoCell>
-              <DemoCell tone="neutral" label="Cost">
-                2
-              </DemoCell>
-              <DemoCell tone="neutral" label="Colors">
-                <PitchDots />
-              </DemoCell>
-              <DemoCell tone="neutral" label="Class">
-                Ninja
-              </DemoCell>
-            </div>
-            <p className="text-[#b8b8b8] text-sm">
-              <span className="text-white font-bold">Type</span> matches the answer exactly.
-            </p>
-          </div>
+          <Example
+            cells={
+              <>
+                <DemoCell tone="neutral" label="Type">Action</DemoCell>
+                <DemoCell tone="close" label="Attack">
+                  <span className="flex flex-col items-center gap-0.5">
+                    <span>6</span>
+                    <span className="text-[11px] leading-none opacity-80">▼</span>
+                  </span>
+                </DemoCell>
+                <DemoCell tone="neutral" label="Defense">3</DemoCell>
+                <DemoCell tone="neutral" label="Cost">1</DemoCell>
+              </>
+            }
+          >
+            <span className="text-fg font-semibold">Attack</span> is close, and the answer is lower.
+          </Example>
 
-          <div>
-            <div className="flex gap-1 mb-2">
-              <DemoCell tone="neutral" label="Type">
-                Action
-              </DemoCell>
-              <DemoCell tone="close" label="Attack">
-                <span className="flex flex-col items-center gap-0.5">
-                  <span>6</span>
-                  <span className="text-white font-bold text-sm leading-none">▼</span>
-                </span>
-              </DemoCell>
-              <DemoCell tone="neutral" label="Defense">
-                3
-              </DemoCell>
-              <DemoCell tone="neutral" label="Cost">
-                1
-              </DemoCell>
-            </div>
-            <p className="text-[#b8b8b8] text-sm">
-              <span className="text-white font-bold">Attack</span> is close—the answer is lower (follow
-              the arrow).
-            </p>
-          </div>
-
-          <div>
-            <div className="flex gap-1 mb-2">
-              <DemoCell tone="neutral" label="Type">
-                Action
-              </DemoCell>
-              <DemoCell tone="neutral" label="Talent">
-                None
-              </DemoCell>
-              <DemoCell tone="wrong" label="Keywords">
-                Go again
-              </DemoCell>
-              <DemoCell tone="neutral" label="Class">
-                Ninja
-              </DemoCell>
-            </div>
-            <p className="text-[#b8b8b8] text-sm">
-              <span className="text-white font-bold">Keywords</span> does not match the answer.
-            </p>
-          </div>
+          <Example
+            cells={
+              <>
+                <DemoCell tone="neutral" label="Type">Action</DemoCell>
+                <DemoCell tone="neutral" label="Talent">None</DemoCell>
+                <DemoCell tone="wrong" label="Keywords">Go again</DemoCell>
+                <DemoCell tone="neutral" label="Class">Ninja</DemoCell>
+              </>
+            }
+          >
+            <span className="text-fg font-semibold">Keywords</span> don&apos;t match the answer.
+          </Example>
         </div>
 
-        <p className="text-[#818384] text-xs mb-3">
-          You can use <span className="text-[#d0d0d0] font-semibold">Get a hint</span> after a guess when
-          it&apos;s available.
-        </p>
-        <p className="text-[#818384] text-xs mb-6">
-          Rarely, two different cards share the same stats—you&apos;ll need another guess to find the
-          right card.
-        </p>
+        <div className="rounded-md bg-sunken px-3.5 py-3 mt-6 space-y-1.5 text-xs text-muted">
+          <p>
+            Stuck? Use <span className="text-fg font-semibold">Get a hint</span> after a guess to
+            reveal one of the answer&apos;s stats.
+          </p>
+          <p>
+            Rarely, two cards share the same stats. You&apos;ll need one more guess to find the right
+            one.
+          </p>
+        </div>
 
-        <button
-          type="button"
-          onClick={handleClose}
-          className="w-full py-3 rounded-xl bg-[#538d4e] hover:bg-[#6aad65] text-white font-bold text-base transition-colors"
-        >
-          Got it
+        <button type="button" onClick={handleClose} className="btn btn-primary w-full mt-6">
+          Start guessing
         </button>
       </div>
-    </div>
+    </Modal>
   );
 }

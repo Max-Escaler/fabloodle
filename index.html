@@ -11,12 +11,20 @@
   gtag('config', 'G-GMSDRMJ3PV');
 </script>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#131110" />
+    <!-- Dark is the default (matching FAB Tools and FAB Trades); apply a saved
+         light preference before first paint so there's no flash. -->
+    <script>(function(){try{var m=localStorage.getItem("fabloodle-theme");if(m==="light"||m==="dark"){document.documentElement.setAttribute("data-theme",m);}}catch(e){}})();</script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Same families as FAB Tools and FAB Trades: Archivo (display) + Onest (body). -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..800&family=Onest:wght@400..700&display=swap" />
     <meta name="description" content="Daily Flesh and Blood Card guessing game" />
     <title>Fabloodle</title>
   </head>
-  <body>
+  <body class="min-h-dvh antialiased">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
